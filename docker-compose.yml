@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fieldnotes}
+      POSTGRES_USER: ${DB_USER:-fieldnotes}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fieldnotes}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - fieldnotes_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      PORT: ${PORT:-8080}
+      SERVER_ADDRESS: 0.0.0.0
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-fieldnotes}
+      DB_USER: ${DB_USER:-fieldnotes}
+      DB_PASSWORD: ${DB_PASSWORD:-fieldnotes}
+      JWT_SECRET: ${JWT_SECRET:-field-notes-dev-secret-change-me-32bytes}
+      JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-60}
+      JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-30}
+      PHOTO_DIR: /app/uploads
+    volumes:
+      - fieldnotes_photos:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  fieldnotes_pg:
+  fieldnotes_photos:

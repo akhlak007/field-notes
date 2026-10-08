@@ -1,0 +1,48 @@
+.idea/
+.vscode/
+*.iml
+.DS_Store
+.env
+.run/
+
+# Secrets and signing
+*.jks
+*.keystore
+*.p12
+key.properties
+mobile/android/keystore/
+mobile/android/app/upload-keystore.jks
+
+# Backend
+backend/target/
+backend/data/
+backend/uploads/
+uploads/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Flutter / Android / iOS
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/debug
+mobile/android/app/profile
+mobile/android/app/release
+mobile/**/GeneratedPluginRegistrant.*
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/coverage/
+mobile/*.apk
+mobile/*.aab
+*.apk
+*.aab
+hs_err_pid*.log
+*.hprof
+
+# Node / Maven leftovers if tools drop them at the root
+node_modules/
+target/

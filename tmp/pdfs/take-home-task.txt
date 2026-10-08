@@ -1,0 +1,94 @@
+App name: Field Notes 
+ 
+Build a mobile app and REST backend for field workers to record notes during site visits. 
+ 
+A user should be able to create an account and log in through the backend. After logging in, 
+they can create customers, add sites under each customer, and create field notes for those 
+sites. 
+ 
+The app should work both online and offline. Users should be able to continue working without 
+an internet connection, and their local changes should automatically sync with the backend 
+once the connection is available again. 
+ 
+Core Flow 
+ 
+* Register and log in while online. 
+* Create and manage customers, sites, and field notes. 
+* Continue working offline, including creating, editing, and deleting data. 
+* Sync local changes with the backend when the connection is restored. 
+* If the app is reinstalled or local data is cleared, the user should be able to log in again and 
+restore their data from the server. 
+ 
+Data 
+ 
+Customer 
+ 
+* Name 
+* Contact Information 
+ 
+Site 
+ 
+* Site Name 
+* Address 
+* Customer 
+ 
+Field Note 
+ 
+* Site 
+* Title 
+* Description 
+* Location 
+* Date & Time 
+* Status 
+* Optional Photo 
+ 
+A customer can have multiple sites, and each site can have multiple field notes. Use proper 
+relationships between users, customers, sites, and field notes instead of storing duplicated 
+customer or site information. 
+ 
+Features 
+ 
+* Create, view, edit, and delete customers, sites, and field notes 
+* Search field notes by title, description, site, or customer 
+* Filter notes by status or site 
+* Handle location and camera/gallery permissions properly 
+* Offline-first local storage and synchronization 
+* Clean and easy-to-use UI 
+ 
+Settings 
+ 
+Add a Settings screen with a "Default Note Status" option. 
+ 
+The selected status should be saved locally and automatically used when creating a new field 
+note. It should remain available after restarting the app and does not need to be synced with the 
+backend. 
+ 
+Required Stack 
+ 
+Mobile App 
+ 
+* Flutter 
+* BLoC for state management 
+* Hive or SQLite for local storage 
+* REST API for backend communication 
+ 
+Backend 
+ 
+* Java + Spring Boot 
+* MySQL or PostgreSQL 
+* User authentication and data isolation 
+* Proper relational database design 
+ 
+The backend should use the database relationships to retrieve related customer and site 
+information where needed. This should naturally involve appropriate relational queries/JOINs 
+rather than duplicating related data. 
+ 
+The exact database schema, API design, and synchronization approach are up to you. 
+ 
+ 
+Please Note: 
+●​ You may submit a partially working solution if you are unable to complete the entire task 
+within the given time. 
+●​ Please try to avoid relying heavily on agentic coding tools. We are more interested in 
+understanding your own approach, problem-solving, and implementation. 
+ 

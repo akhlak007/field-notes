@@ -1,0 +1,7 @@
+# Activate with SPRING_PROFILES_ACTIVE=prod (Render).
+# JWT_SECRET has no default here — the process refuses to start without it.
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  photos:
+    dir: ${PHOTO_DIR:/app/uploads}

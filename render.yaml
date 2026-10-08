@@ -1,0 +1,24 @@
+# Optional Render blueprint. Set secrets in the dashboard; never commit them.
+# Neon: DB_URL must be JDBC with sslmode=require (not postgres://).
+services:
+  - type: web
+    name: field-notes-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_ADDRESS
+        value: 0.0.0.0
+      - key: PHOTO_DIR
+        value: /app/uploads
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
