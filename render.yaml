@@ -1,11 +1,12 @@
 # Optional Render blueprint. Set secrets in the dashboard; never commit them.
 # Neon: DB_URL must be JDBC with sslmode=require (not postgres://).
+# Build from the repository root so COPY backend/pom.xml and backend/src work.
 services:
   - type: web
     name: field-notes-api
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE

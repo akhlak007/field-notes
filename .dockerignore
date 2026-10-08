@@ -1,0 +1,16 @@
+.git
+.idea
+.vscode
+.neon
+.env
+.env.local
+node_modules
+mobile
+docs
+target
+backend/target
+backend/data
+backend/uploads
+uploads
+**/*.apk
+**/*.aab

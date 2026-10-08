@@ -3,6 +3,7 @@
 *.iml
 .DS_Store
 .env
+.env.local
 .run/
 
 # Secrets and signing
@@ -46,3 +47,5 @@ hs_err_pid*.log
 # Node / Maven leftovers if tools drop them at the root
 node_modules/
 target/
+.neon
+.env.local
