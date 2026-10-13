@@ -6,6 +6,7 @@
 .env.local
 .render.env
 .run/
+tmp/
 
 # Secrets and signing
 *.jks
@@ -56,4 +57,3 @@ hs_err_pid*.log
 node_modules/
 target/
 .neon
-.env.local
