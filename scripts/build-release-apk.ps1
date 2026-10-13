@@ -2,7 +2,7 @@
 # Usage (from repo root):  .\scripts\build-release-apk.ps1
 [CmdletBinding()]
 param(
-    [string]$ApiBaseUrl = "https://field-notes-api.onrender.com"
+    [string]$ApiBaseUrl = "https://field-notes-3.onrender.com"
 )
 
 Set-StrictMode -Version Latest

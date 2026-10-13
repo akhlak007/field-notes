@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   const AppConfig._();
 
-  static const String productionApiUrl = 'https://field-notes-api.onrender.com';
+  static const String productionApiUrl = 'https://field-notes-3.onrender.com';
 
   static const String apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
 

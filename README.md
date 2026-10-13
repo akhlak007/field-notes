@@ -33,8 +33,8 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 
 | Item | Value |
 |---|---|
-| **Live backend URL** | `https://field-notes-api.onrender.com` |
-| **Health** | `GET https://field-notes-api.onrender.com/api/health` → `{"status":"UP"}` |
+| **Live backend URL** | `https://field-notes-3.onrender.com` |
+| **Health** | `GET https://field-notes-3.onrender.com/api/health` → `{"status":"UP"}` |
 | **APK** | From the repo root: `.\scripts\build-release-apk.ps1` — the release APK already talks to the public URL. Attach `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk` to a GitHub Release |
 | **Demo account** | Register in the app, or create `worker@company.com` / `password123` once via the API |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
@@ -139,14 +139,14 @@ Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`. If `mobile/a
 | `flutter analyze` (in `mobile/`) | No issues found |
 | `flutter test` | All 24 tests passed |
 | `mvn test` (`backend/mvnw.cmd test`) | 8 tests, 0 failures (Testcontainers + PostgreSQL 16), including concurrent sync locking |
-| `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (64.9MB) pointed at `https://field-notes-api.onrender.com` |
-| Install on a physical phone against a public API | APK is ready. Render currently reports the API as **suspended** until it is resumed in the dashboard |
+| `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (65.0MB) pointed at `https://field-notes-3.onrender.com` |
+| Install on a physical phone against a public API | **Not run on a device here**; the public health endpoint was verified `UP` and the APK contains the live hostname |
 | Airplane-mode create → reconnect → restore after clear data | **Not run on a device here**; covered by unit tests for cursor isolation, pending push, and pull restore |
 | Demo video | **Not recorded** |
 
 ## Known limitations
 
-- The public API is `https://field-notes-api.onrender.com`. If Render shows the service as suspended, resume it in the dashboard; Flyway creates tables on the first successful boot against Neon.
+- The public API is `https://field-notes-3.onrender.com`; Flyway creates tables on the first successful boot against Neon.
 - Release HTTP is not open to arbitrary LAN IPs; prefer HTTPS or a debug build for Wi-Fi demos.
 - Default note status is device-wide SharedPreferences (by design: “saved on this device only”), not synced.
 - Photos are stored on the API filesystem (`PHOTO_DIR`). On free Render they can vanish on restart; metadata stays in Postgres.
