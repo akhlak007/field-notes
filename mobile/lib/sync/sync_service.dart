@@ -58,11 +58,11 @@ class SyncService {
         continue;
       }
       if (row.syncState == SyncStates.pendingDelete) {
-        await database.removeCustomer(userId, row.id);
+        await database.removeCustomerIfUnchanged(userId, row);
       } else {
         await database.markCustomerSynced(
           userId,
-          row.id,
+          row,
           item.updatedAt ?? DateTime.now().toUtc(),
         );
       }
@@ -74,11 +74,11 @@ class SyncService {
         continue;
       }
       if (row.syncState == SyncStates.pendingDelete) {
-        await database.removeSite(userId, row.id);
+        await database.removeSiteIfUnchanged(userId, row);
       } else {
         await database.markSiteSynced(
           userId,
-          row.id,
+          row,
           item.updatedAt ?? DateTime.now().toUtc(),
         );
       }
@@ -90,14 +90,20 @@ class SyncService {
         continue;
       }
       if (row.syncState == SyncStates.pendingDelete) {
-        await database.removeNote(userId, row.id);
+        await database.removeNoteIfUnchanged(userId, row);
       } else {
         await database.markNoteSynced(
           userId,
-          row.id,
+          row,
           item.updatedAt ?? DateTime.now().toUtc(),
         );
       }
+    }
+    if (result.customers.map((item) => item.id).toSet().length <
+            customers.length ||
+        result.sites.map((item) => item.id).toSet().length < sites.length ||
+        result.notes.map((item) => item.id).toSet().length < notes.length) {
+      failed = true;
     }
     return failed;
   }
@@ -110,7 +116,7 @@ class SyncService {
       if (path == null) continue;
       try {
         await remote.uploadPhoto(note.id, path, accessToken: accessToken);
-        await database.markPhotoSynced(userId, note.id);
+        await database.markPhotoSynced(userId, note.id, path);
       } catch (_) {
         // One photo failure stays pending and does not block the rest of the sync.
         failed = true;

@@ -1,3 +1,4 @@
+import 'package:field_notes/core/config/app_config.dart';
 import 'package:field_notes/core/theme/app_theme.dart';
 import 'package:field_notes/features/auth/auth_bloc.dart';
 import 'package:field_notes/features/settings/settings_bloc.dart';
@@ -50,20 +51,12 @@ class SettingsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sync',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Changes sync automatically when online.',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.muted),
-                        ),
-                      ],
+                    title: 'Sync',
+                    subtitle:
+                        'Changes sync automatically when online. The first request after idle can take up to a minute while the server wakes.',
+                    child: Text(
+                      AppConfig.apiBaseUrl(),
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                   const SizedBox(height: 12),

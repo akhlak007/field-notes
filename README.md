@@ -33,9 +33,9 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 
 | Item | Value |
 |---|---|
-| **Live backend URL** | *Paste after Render is live, e.g.* `https://field-notes-xxxx.onrender.com` |
-| **Health** | `GET https://<service>.onrender.com/api/health` → `{"status":"UP"}` |
-| **APK** | `flutter build apk --release --dart-define=API_BASE_URL=https://<service>.onrender.com` then attach `FieldNotes-v1.0.apk` to a GitHub Release |
+| **Live backend URL** | `https://field-notes-api.onrender.com` |
+| **Health** | `GET https://field-notes-api.onrender.com/api/health` → `{"status":"UP"}` |
+| **APK** | From the repo root: `.\scripts\build-release-apk.ps1` — the release APK already talks to the public URL. Attach `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk` to a GitHub Release |
 | **Demo account** | Register in the app, or create `worker@company.com` / `password123` once via the API |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
 
@@ -96,7 +96,7 @@ cd backend
 | `SERVER_ADDRESS` | `0.0.0.0` |
 | `DB_URL` | `jdbc:postgresql://localhost:5432/fieldnotes` |
 | `DB_USER` / `DB_PASSWORD` | `fieldnotes` |
-| `JWT_SECRET` | development secret in `.env.example` — change it for any shared host |
+| `JWT_SECRET` | Optional locally: omitted values generate an ephemeral random key. Set a random 32+ byte value to keep sessions valid across restarts; required in production. |
 
 Copy `.env.example` to `.env` for local overrides. Never commit `.env` or keystores.
 
@@ -116,16 +116,13 @@ flutter run --dart-define=API_BASE_URL=http://localhost:8080
 | Android emulator | `http://10.0.2.2:8080` (this is the Android default if the define is omitted) |
 | Physical phone | `http://<laptop-ip>:8080` (debug) or `https://<public-api>` (release) |
 
-**Release APK** (sign with a local keystore — copy `mobile/android/key.properties.example` to `key.properties` and point it at a `.jks` that is **not** in git):
+**Release APK** (public API is baked in — no URL flag required):
 
-```bash
-cd mobile
-flutter build apk --release --dart-define=API_BASE_URL=https://YOUR-BACKEND
-# optional smaller artifacts:
-flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://YOUR-BACKEND
+```powershell
+.\scripts\build-release-apk.ps1
 ```
 
-Output: `mobile/build/app/outputs/flutter-apk/app-release.apk`. Rename to `FieldNotes-v1.0.apk` for the GitHub Release.
+Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`. If `mobile/android/key.properties` is missing, Gradle signs with the debug keystore (fine for this take-home).
 
 ## How sync works (five lines)
 
@@ -135,21 +132,21 @@ Output: `mobile/build/app/outputs/flutter-apk/app-release.apk`. Rename to `Field
 4. Soft deletes travel through pull so other devices drop the row; last-write-wins, local pending is not overwritten.
 5. Sync runs on launch, after a local change, when connectivity returns, and on Retry / pull-to-refresh.
 
-## Checks actually run (8 Oct 2026)
+## Checks actually run (13 Oct 2026)
 
 | Command | Result |
 |---|---|
 | `flutter analyze` (in `mobile/`) | No issues found |
-| `flutter test` | All 17 tests passed |
-| `mvn test` (`backend/mvnw.cmd test`) | 7 tests, 0 failures (Testcontainers + Docker) |
-| `flutter build apk --release --dart-define=API_BASE_URL=http://10.0.2.2:8080` | **Failed in this session.** The Flutter template had `org.gradle.jvmargs=-Xmx8G` on a 7 GB laptop; the Gradle daemon OOM-crashed. Heap is now `1536m` in `mobile/android/gradle.properties`. Re-run the command locally after closing other IDEs. |
-| Install on a physical phone against a public API | **Not run** — no public host and no phone in this session |
+| `flutter test` | All 24 tests passed |
+| `mvn test` (`backend/mvnw.cmd test`) | 8 tests, 0 failures (Testcontainers + PostgreSQL 16), including concurrent sync locking |
+| `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (64.9MB) pointed at `https://field-notes-api.onrender.com` |
+| Install on a physical phone against a public API | APK is ready. Render currently reports the API as **suspended** until it is resumed in the dashboard |
 | Airplane-mode create → reconnect → restore after clear data | **Not run on a device here**; covered by unit tests for cursor isolation, pending push, and pull restore |
 | Demo video | **Not recorded** |
 
 ## Known limitations
 
-- There is no public HTTPS URL until someone deploys `backend/` (Render blueprint: `render.yaml`). Until then, reviewers use Docker or LAN.
+- The public API is `https://field-notes-api.onrender.com`. If Render shows the service as suspended, resume it in the dashboard; Flyway creates tables on the first successful boot against Neon.
 - Release HTTP is not open to arbitrary LAN IPs; prefer HTTPS or a debug build for Wi-Fi demos.
 - Default note status is device-wide SharedPreferences (by design: “saved on this device only”), not synced.
 - Photos are stored on the API filesystem (`PHOTO_DIR`). On free Render they can vanish on restart; metadata stays in Postgres.

@@ -4,6 +4,7 @@
 .DS_Store
 .env
 .env.local
+.render.env
 .run/
 
 # Secrets and signing

@@ -1,21 +1,27 @@
 import 'dart:io';
 
-/// Single place the app reads `--dart-define=API_BASE_URL=...`.
+import 'package:flutter/foundation.dart';
+
+/// Single place the app picks the API host.
 ///
-/// Release APKs must pass a public HTTPS URL. If the define is omitted,
-/// Android uses the emulator loopback (`10.0.2.2`); desktop uses localhost
-/// so `flutter run` still reaches a local API (original task brief).
+/// Release APKs talk to the public HTTPS backend so a phone or reviewer
+/// does not need `--dart-define`. Debug `flutter run` still uses localhost
+/// (or the Android emulator loopback) unless a define is passed.
 class AppConfig {
   const AppConfig._();
+
+  static const String productionApiUrl = 'https://field-notes-api.onrender.com';
 
   static const String apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
 
   static String apiBaseUrl() {
     final raw = apiBaseUrlDefine.isNotEmpty
         ? apiBaseUrlDefine
-        : (Platform.isAndroid
-              ? 'http://10.0.2.2:8080'
-              : 'http://localhost:8080');
+        : (kReleaseMode
+              ? productionApiUrl
+              : (Platform.isAndroid
+                    ? 'http://10.0.2.2:8080'
+                    : 'http://localhost:8080'));
     return raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
   }
 }

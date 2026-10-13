@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -38,6 +39,7 @@ public class SyncService {
 	private final CustomerService customerService;
 	private final SiteService siteService;
 	private final NoteService noteService;
+	private final SyncTransactionLock syncLock;
 
 	public SyncService(
 			PlatformTransactionManager transactionManager,
@@ -46,7 +48,8 @@ public class SyncService {
 			FieldNoteRepository notes,
 			CustomerService customerService,
 			SiteService siteService,
-			NoteService noteService) {
+			NoteService noteService,
+			SyncTransactionLock syncLock) {
 		this.tx = new TransactionTemplate(transactionManager);
 		this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		this.customers = customers;
@@ -55,6 +58,7 @@ public class SyncService {
 		this.customerService = customerService;
 		this.siteService = siteService;
 		this.noteService = noteService;
+		this.syncLock = syncLock;
 	}
 
 	public SyncPushResponse push(long userId, SyncPushRequest request) {
@@ -74,7 +78,9 @@ public class SyncService {
 		return new SyncPushResponse(serverTime, customerResults, siteResults, noteResults);
 	}
 
+	@Transactional
 	public SyncPullResponse pull(long userId, Instant since) {
+		syncLock.acquire();
 		Instant cursor = since == null ? Instant.EPOCH : since;
 		Instant serverTime = Instant.now();
 		return new SyncPullResponse(

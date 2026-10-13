@@ -22,11 +22,17 @@ public class SiteService {
 	private final SiteRepository sites;
 	private final CustomerRepository customers;
 	private final FieldNoteRepository notes;
+	private final SyncTransactionLock syncLock;
 
-	public SiteService(SiteRepository sites, CustomerRepository customers, FieldNoteRepository notes) {
+	public SiteService(
+			SiteRepository sites,
+			CustomerRepository customers,
+			FieldNoteRepository notes,
+			SyncTransactionLock syncLock) {
 		this.sites = sites;
 		this.customers = customers;
 		this.notes = notes;
+		this.syncLock = syncLock;
 	}
 
 	@Transactional(readOnly = true)
@@ -44,6 +50,7 @@ public class SiteService {
 
 	@Transactional
 	public SiteResponse upsert(long userId, UUID id, SiteWrite write) {
+		syncLock.acquire();
 		requireCustomer(userId, write.customerId());
 		Instant now = Instant.now();
 		Site existing = sites.findById(id).orElse(null);
@@ -66,6 +73,7 @@ public class SiteService {
 
 	@Transactional
 	public void delete(long userId, UUID id) {
+		syncLock.acquire();
 		Site site = active(userId, id);
 		Instant now = Instant.now();
 		notes.softDeleteBySite(userId, id, now);

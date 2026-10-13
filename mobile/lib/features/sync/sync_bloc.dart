@@ -80,35 +80,44 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     required SyncService syncService,
     required AppDatabase database,
     required LocalChangeBus changes,
-    required Connectivity connectivity,
+    Connectivity? connectivity,
+    Future<List<ConnectivityResult>> Function()? checkConnectivity,
+    Stream<List<ConnectivityResult>>? connectivityChanges,
   }) : _syncService = syncService,
        _database = database,
-       _connectivity = connectivity,
+       _connectivity = connectivity ?? Connectivity(),
        super(const SyncState()) {
     on<SyncStarted>(_onStarted);
     on<SyncStopped>(_onStopped);
     on<SyncRequested>(_onRequested);
     on<ConnectivityChanged>(_onConnectivity);
     _changesSub = changes.changes.listen((_) => add(const SyncRequested()));
-    _connectivitySub = connectivity.onConnectivityChanged.listen((results) {
-      add(ConnectivityChanged(_isOnline(results)));
-    });
+    _checkConnectivity = checkConnectivity ?? _connectivity.checkConnectivity;
+    _connectivitySub =
+        (connectivityChanges ?? _connectivity.onConnectivityChanged).listen((
+          results,
+        ) {
+          add(ConnectivityChanged(_isOnline(results)));
+        });
   }
 
   final SyncService _syncService;
   final AppDatabase _database;
   final Connectivity _connectivity;
+  late final Future<List<ConnectivityResult>> Function() _checkConnectivity;
   StreamSubscription<void>? _changesSub;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   Timer? _retry;
   int _attempt = 0;
   int? _userId;
+  bool _rerunRequested = false;
 
   Future<void> _onStarted(SyncStarted event, Emitter<SyncState> emit) async {
     _retry?.cancel();
     _attempt = 0;
+    _rerunRequested = false;
     _userId = event.userId;
-    final results = await _connectivity.checkConnectivity();
+    final results = await _checkConnectivity();
     final online = _isOnline(results);
     final pending = await _database.pendingCount(event.userId);
     if (_userId != event.userId) return;
@@ -126,6 +135,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   void _onStopped(SyncStopped event, Emitter<SyncState> emit) {
     _retry?.cancel();
     _attempt = 0;
+    _rerunRequested = false;
     _userId = null;
     emit(SyncState(online: state.online));
   }
@@ -143,7 +153,8 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     Emitter<SyncState> emit,
   ) async {
     final userId = _userId;
-    if (userId == null || state.syncing || !state.online) {
+    if (state.syncing) {
+      _rerunRequested = true;
       if (userId != null) {
         final pending = await _database.pendingCount(userId);
         if (_userId == userId) {
@@ -152,12 +163,24 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       }
       return;
     }
+    if (userId == null || !state.online) {
+      if (userId != null) {
+        final pending = await _database.pendingCount(userId);
+        if (_userId == userId) {
+          emit(state.copyWith(pending: pending));
+        }
+      }
+      return;
+    }
+    _rerunRequested = false;
     emit(state.copyWith(syncing: true, clearError: true));
+    var succeeded = false;
     try {
       await _syncService.sync();
       if (_userId != userId) return;
       _attempt = 0;
       _retry?.cancel();
+      succeeded = true;
     } catch (error) {
       if (_userId != userId) return;
       _scheduleRetry();
@@ -172,6 +195,10 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     final pending = await _database.pendingCount(userId);
     if (_userId != userId) return;
     emit(state.copyWith(syncing: false, pending: pending));
+    if (succeeded && state.online && _rerunRequested) {
+      _rerunRequested = false;
+      add(const SyncRequested());
+    }
   }
 
   void _scheduleRetry() {

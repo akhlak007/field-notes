@@ -20,6 +20,11 @@ Settings are not in the outbox.
 5. Apply remote rows unless the local row is still pending (local pending wins).
 6. Store the server's `serverTime` as `last_sync_at:<userId>`.
 
+Push acknowledgements are conditional on the exact local timestamp and pending
+state that was sent. If the user edits, deletes, or replaces a photo while the
+request is in flight, the older response cannot mark that newer change synced;
+the newer version stays in the outbox for the next pass.
+
 A leftover global `last_sync_at` key is ignored and deleted.
 
 ## Soft delete
@@ -38,8 +43,12 @@ The pull cursor is `last_sync_at:<userId>` in `sync_meta`. Two accounts on one p
 - Pull: if the local row is still `pending_*`, the remote change is skipped until that outbox item is applied.
 - `updated_at` is assigned by the server.
 
+PostgreSQL transaction-scoped advisory locking serializes entity mutations with
+incremental pull snapshots. Pull cannot advance `serverTime` past a write that
+has an earlier timestamp but has not committed yet.
+
 ## When sync runs
 
-On launch after sign-in, after every local change, when connectivity returns, and on pull-to-refresh / Retry. Failures keep the outbox and show **Failed · Retry**. Exponential backoff retries while the same user stays signed in. Sign-out cancels the timer.
+On launch after sign-in, after every local change, when connectivity returns, and on pull-to-refresh / Retry. A request received during an active pass is coalesced into one follow-up pass instead of being dropped. Failures keep the outbox and show **Failed · Retry**. Exponential backoff retries while the same user stays signed in. Sign-out cancels the timer.
 
 A 401 after a failed refresh signs the session out but does **not** wipe SQLite. The same account can sign back in and push the leftover pending rows.

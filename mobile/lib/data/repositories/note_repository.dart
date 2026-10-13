@@ -116,7 +116,10 @@ class NoteRepository {
     await dir.create(recursive: true);
     final file = File(p.join(dir.path, '$id.jpg'));
     await file.writeAsBytes(bytes, flush: true);
-    await _db.setLocalPhoto(userId, id, file.path);
+    final applied = await _db.setLocalPhotoIfUnchanged(userId, row, file.path);
+    if (applied == 0) {
+      return (await _db.anyNote(userId, id))?.localPhotoPath;
+    }
     return file.path;
   }
 
@@ -127,7 +130,7 @@ class NoteRepository {
           p.join((await getApplicationDocumentsDirectory()).path, 'photos'),
         );
     await dir.create(recursive: true);
-    final dest = File(p.join(dir.path, '$id.jpg'));
+    final dest = File(p.join(dir.path, '$id-${_uuid.v4()}.jpg'));
     await File(sourcePath).copy(dest.path);
     return dest.path;
   }

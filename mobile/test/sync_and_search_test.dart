@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/native.dart';
 import 'package:field_notes/core/constants.dart';
 import 'package:field_notes/data/local/app_database.dart';
@@ -9,6 +11,8 @@ import 'package:field_notes/data/repositories/customer_repository.dart';
 import 'package:field_notes/data/repositories/note_repository.dart';
 import 'package:field_notes/features/customers/customer_bloc.dart';
 import 'package:field_notes/features/notes/note_bloc.dart';
+import 'package:field_notes/features/sync/sync_bloc.dart';
+import 'package:field_notes/shared/models/models.dart';
 import 'package:field_notes/sync/local_change_bus.dart';
 import 'package:field_notes/sync/sync_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -122,6 +126,286 @@ void main() {
         SyncStates.synced,
       );
       expect(remote.pushes, hasLength(2));
+    },
+  );
+
+  test(
+    'push acknowledgement cannot mark a newer local edit as synced',
+    () async {
+      final firstVersion = DateTime.utc(2026, 10, 1);
+      // Drift's default DateTime mapping stores whole seconds. The content
+      // snapshot must still distinguish two edits inside the same second.
+      final newerVersion = DateTime.utc(2026, 10, 1, 0, 0, 0, 100);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'c1',
+          userId: 7,
+          name: 'Sent version',
+          contactInfo: null,
+          createdAt: firstVersion,
+          updatedAt: firstVersion,
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      var edited = false;
+      final remote = _FakeRemote(
+        beforePushResponse: (_) async {
+          if (edited) return;
+          edited = true;
+          await database.saveCustomer(
+            CustomerRow(
+              id: 'c1',
+              userId: 7,
+              name: 'Newer local edit',
+              contactInfo: null,
+              createdAt: firstVersion,
+              updatedAt: newerVersion,
+              syncState: SyncStates.pendingUpsert,
+            ),
+          );
+        },
+      );
+      final service = SyncService(
+        remote: remote,
+        database: database,
+        userId: () async => 7,
+      );
+
+      await service.sync();
+
+      final row = await database.anyCustomer(7, 'c1');
+      expect(row!.name, 'Newer local edit');
+      // Both versions intentionally collapse to the same persisted second.
+      expect(row.updatedAt.isAtSameMomentAs(firstVersion), isTrue);
+      expect(row.syncState, SyncStates.pendingUpsert);
+      expect(remote.pushes.single.customers.single['name'], 'Sent version');
+
+      await service.sync();
+      expect(remote.pushes[1].customers.single['name'], 'Newer local edit');
+      expect(
+        (await database.anyCustomer(7, 'c1'))!.syncState,
+        SyncStates.synced,
+      );
+    },
+  );
+
+  test(
+    'photo acknowledgement cannot acknowledge a replacement selected in flight',
+    () async {
+      final now = DateTime.utc(2026, 10, 1);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'c1',
+          userId: 7,
+          name: 'Customer',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.synced,
+        ),
+      );
+      await database.saveSite(
+        SiteRow(
+          id: 's1',
+          userId: 7,
+          customerId: 'c1',
+          siteName: 'Site',
+          address: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.synced,
+        ),
+      );
+      FieldNoteRow note() => FieldNoteRow(
+        id: 'n1',
+        userId: 7,
+        siteId: 's1',
+        title: 'Photo',
+        description: null,
+        latitude: null,
+        longitude: null,
+        notedAt: now,
+        status: 'OPEN',
+        createdAt: now,
+        updatedAt: now,
+        syncState: SyncStates.synced,
+        localPhotoPath: null,
+        photoSyncState: PhotoSync.none,
+        remoteHasPhoto: false,
+      );
+      await database.saveNote(note());
+      final temp = await Directory.systemTemp.createTemp('field-notes-photo-');
+      addTearDown(() => temp.delete(recursive: true));
+      final firstSource = File(
+        '${temp.path}${Platform.pathSeparator}first.jpg',
+      );
+      final replacementSource = File(
+        '${temp.path}${Platform.pathSeparator}replacement.jpg',
+      );
+      await firstSource.writeAsBytes([1, 2, 3]);
+      await replacementSource.writeAsBytes([4, 5, 6]);
+      final changes = LocalChangeBus();
+      addTearDown(changes.close);
+      final repository = NoteRepository(
+        database,
+        changes,
+        _UnusedRemote(),
+        photoDirectory: Directory('${temp.path}${Platform.pathSeparator}saved'),
+      );
+      NoteDraft draft(String photoPath) => NoteDraft(
+        id: 'n1',
+        siteId: 's1',
+        title: 'Photo',
+        notedAt: now,
+        status: 'OPEN',
+        newPhotoPath: photoPath,
+      );
+      await repository.save(userId: 7, draft: draft(firstSource.path));
+      final firstSavedPath = (await database.anyNote(7, 'n1'))!.localPhotoPath!;
+      var replaced = false;
+      final remote = _FakeRemote(
+        beforeUploadResponse: (_, _) async {
+          if (replaced) return;
+          replaced = true;
+          await repository.save(
+            userId: 7,
+            draft: draft(replacementSource.path),
+          );
+        },
+      );
+
+      await SyncService(
+        remote: remote,
+        database: database,
+        userId: () async => 7,
+      ).sync();
+
+      final saved = await database.anyNote(7, 'n1');
+      expect(saved!.localPhotoPath, isNot(firstSavedPath));
+      expect(saved.photoSyncState, PhotoSync.pendingUpload);
+      expect(remote.uploadedPhotoPaths, [firstSavedPath]);
+    },
+  );
+
+  test(
+    'photo download cannot overwrite a replacement selected in flight',
+    () async {
+      final now = DateTime.utc(2026, 10, 1);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'c1',
+          userId: 7,
+          name: 'Customer',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.synced,
+        ),
+      );
+      await database.saveSite(
+        SiteRow(
+          id: 's1',
+          userId: 7,
+          customerId: 'c1',
+          siteName: 'Site',
+          address: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.synced,
+        ),
+      );
+      await database.saveNote(
+        FieldNoteRow(
+          id: 'n1',
+          userId: 7,
+          siteId: 's1',
+          title: 'Photo',
+          description: null,
+          latitude: null,
+          longitude: null,
+          notedAt: now,
+          status: 'OPEN',
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.synced,
+          localPhotoPath: null,
+          photoSyncState: PhotoSync.synced,
+          remoteHasPhoto: true,
+        ),
+      );
+      final temp = await Directory.systemTemp.createTemp(
+        'field-notes-download-',
+      );
+      addTearDown(() => temp.delete(recursive: true));
+      final replacement = File(
+        '${temp.path}${Platform.pathSeparator}replacement.jpg',
+      );
+      await replacement.writeAsBytes([9, 8, 7]);
+      final changes = LocalChangeBus();
+      addTearDown(changes.close);
+      late final NoteRepository repository;
+      final remote = _FakeRemote(
+        beforeDownloadResponse: (_) async {
+          await repository.save(
+            userId: 7,
+            draft: NoteDraft(
+              id: 'n1',
+              siteId: 's1',
+              title: 'Photo',
+              notedAt: now,
+              status: 'OPEN',
+              newPhotoPath: replacement.path,
+            ),
+          );
+        },
+      );
+      repository = NoteRepository(
+        database,
+        changes,
+        remote,
+        photoDirectory: Directory('${temp.path}${Platform.pathSeparator}saved'),
+      );
+
+      final returnedPath = await repository.ensurePhoto(7, 'n1');
+      final saved = await database.anyNote(7, 'n1');
+
+      expect(returnedPath, saved!.localPhotoPath);
+      expect(saved.localPhotoPath, isNot(endsWith('n1.jpg')));
+      expect(saved.photoSyncState, PhotoSync.pendingUpload);
+      expect(saved.syncState, SyncStates.pendingUpsert);
+    },
+  );
+
+  test(
+    'an omitted push result leaves the row pending and reports failure',
+    () async {
+      final now = DateTime.utc(2026, 10, 1);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'c1',
+          userId: 7,
+          name: 'Pending',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      final remote = _FakeRemote(omitIds: {'c1'});
+
+      await expectLater(
+        SyncService(
+          remote: remote,
+          database: database,
+          userId: () async => 7,
+        ).sync(),
+        throwsA(isA<SyncException>()),
+      );
+
+      expect(
+        (await database.anyCustomer(7, 'c1'))!.syncState,
+        SyncStates.pendingUpsert,
+      );
     },
   );
 
@@ -330,6 +614,128 @@ void main() {
   });
 
   test(
+    'a sync request received during a pass triggers a follow-up pass',
+    () async {
+      final now = DateTime.utc(2026, 10, 1);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'first',
+          userId: 7,
+          name: 'First',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      final remote = _FakeRemote(blockFirstPush: true);
+      final changes = LocalChangeBus();
+      addTearDown(changes.close);
+      final bloc = SyncBloc(
+        syncService: SyncService(
+          remote: remote,
+          database: database,
+          userId: () async => 7,
+        ),
+        database: database,
+        changes: changes,
+        checkConnectivity: () async => [ConnectivityResult.wifi],
+        connectivityChanges: const Stream.empty(),
+      );
+      addTearDown(bloc.close);
+
+      bloc.add(const SyncStarted(7));
+      await remote.firstPushStarted.future;
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'second',
+          userId: 7,
+          name: 'Second',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now.add(const Duration(minutes: 1)),
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      bloc.add(const SyncRequested());
+      remote.releaseFirstPush.complete();
+
+      await remote.secondPushStarted.future.timeout(const Duration(seconds: 2));
+      if (bloc.state.syncing || bloc.state.pending != 0) {
+        await bloc.stream.firstWhere(
+          (state) =>
+              remote.pushes.length == 2 && !state.syncing && state.pending == 0,
+        );
+      }
+      expect(remote.pushes, hasLength(2));
+      expect(remote.pushes[1].customers.single['id'], 'second');
+    },
+  );
+
+  test(
+    'a successful pass does not spin solely because a row remains pending',
+    () async {
+      final now = DateTime.utc(2026, 10, 1);
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'c1',
+          userId: 7,
+          name: 'Sent version',
+          contactInfo: null,
+          createdAt: now,
+          updatedAt: now,
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      var edited = false;
+      final remote = _FakeRemote(
+        beforePushResponse: (_) async {
+          if (edited) return;
+          edited = true;
+          await database.saveCustomer(
+            CustomerRow(
+              id: 'c1',
+              userId: 7,
+              name: 'Unsignalled newer edit',
+              contactInfo: null,
+              createdAt: now,
+              updatedAt: now,
+              syncState: SyncStates.pendingUpsert,
+            ),
+          );
+        },
+      );
+      final changes = LocalChangeBus();
+      addTearDown(changes.close);
+      final bloc = SyncBloc(
+        syncService: SyncService(
+          remote: remote,
+          database: database,
+          userId: () async => 7,
+        ),
+        database: database,
+        changes: changes,
+        checkConnectivity: () async => [ConnectivityResult.wifi],
+        connectivityChanges: const Stream.empty(),
+      );
+      addTearDown(bloc.close);
+
+      bloc.add(const SyncStarted(7));
+      await bloc.stream.firstWhere(
+        (state) =>
+            remote.pushes.isNotEmpty && !state.syncing && state.pending == 1,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(remote.pushes, hasLength(1));
+      expect(
+        (await database.anyCustomer(7, 'c1'))!.syncState,
+        SyncStates.pendingUpsert,
+      );
+    },
+  );
+
+  test(
     'applied delete is removed locally and a repeated push is safe',
     () async {
       final now = DateTime.utc(2026, 10, 2);
@@ -475,16 +881,28 @@ class _FakeRemote implements SyncRemote {
     SyncPullResult? nextPull,
     Set<String>? failIds,
     this.blockFirstPush = false,
+    this.beforePushResponse,
+    this.beforeUploadResponse,
+    this.beforeDownloadResponse,
+    Set<String>? omitIds,
   }) : nextPull = nextPull,
-       failIds = failIds ?? {};
+       failIds = failIds ?? {},
+       omitIds = omitIds ?? {};
 
   final SyncPullResult? nextPull;
   final Set<String> failIds;
+  final Set<String> omitIds;
   final bool blockFirstPush;
+  final FutureOr<void> Function(SyncPushBody body)? beforePushResponse;
+  final FutureOr<void> Function(String noteId, String filePath)?
+  beforeUploadResponse;
+  final FutureOr<void> Function(String noteId)? beforeDownloadResponse;
   final pushes = <SyncPushBody>[];
   final pushAccessTokens = <String?>[];
+  final uploadedPhotoPaths = <String>[];
   final pullSince = <DateTime>[];
   final firstPushStarted = Completer<void>();
+  final secondPushStarted = Completer<void>();
   final releaseFirstPush = Completer<void>();
 
   @override
@@ -495,6 +913,10 @@ class _FakeRemote implements SyncRemote {
       await releaseFirstPush.future;
     }
     pushes.add(body);
+    if (pushes.length == 2 && !secondPushStarted.isCompleted) {
+      secondPushStarted.complete();
+    }
+    await beforePushResponse?.call(body);
     SyncItemResult resultFor(Map<String, dynamic> item) {
       final id = item['id'] as String;
       if (failIds.contains(id)) {
@@ -509,9 +931,18 @@ class _FakeRemote implements SyncRemote {
 
     return SyncPushResult(
       serverTime: DateTime.utc(2026, 10, 7, 1),
-      customers: body.customers.map(resultFor).toList(),
-      sites: body.sites.map(resultFor).toList(),
-      notes: body.notes.map(resultFor).toList(),
+      customers: body.customers
+          .where((item) => !omitIds.contains(item['id']))
+          .map(resultFor)
+          .toList(),
+      sites: body.sites
+          .where((item) => !omitIds.contains(item['id']))
+          .map(resultFor)
+          .toList(),
+      notes: body.notes
+          .where((item) => !omitIds.contains(item['id']))
+          .map(resultFor)
+          .toList(),
     );
   }
 
@@ -532,10 +963,16 @@ class _FakeRemote implements SyncRemote {
     String noteId,
     String filePath, {
     String? accessToken,
-  }) async {}
+  }) async {
+    uploadedPhotoPaths.add(filePath);
+    await beforeUploadResponse?.call(noteId, filePath);
+  }
 
   @override
-  Future<List<int>> downloadPhoto(String noteId) async => const [];
+  Future<List<int>> downloadPhoto(String noteId) async {
+    await beforeDownloadResponse?.call(noteId);
+    return const [1, 2, 3];
+  }
 }
 
 String _tokenFor(int userId) {

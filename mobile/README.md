@@ -17,6 +17,12 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://localhost:8080
 ```
 
+A release APK already uses `https://field-notes-api.onrender.com`. From the repo root:
+
+```powershell
+.\scripts\build-release-apk.ps1
+```
+
 Run checks with:
 
 ```bash

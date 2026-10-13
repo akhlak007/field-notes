@@ -27,7 +27,6 @@ services:
       DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-fieldnotes}
       DB_USER: ${DB_USER:-fieldnotes}
       DB_PASSWORD: ${DB_PASSWORD:-fieldnotes}
-      JWT_SECRET: ${JWT_SECRET:-field-notes-dev-secret-change-me-32bytes}
       JWT_ACCESS_MINUTES: ${JWT_ACCESS_MINUTES:-60}
       JWT_REFRESH_DAYS: ${JWT_REFRESH_DAYS:-30}
       PHOTO_DIR: /app/uploads

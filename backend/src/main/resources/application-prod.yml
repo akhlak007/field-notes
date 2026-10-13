@@ -1,5 +1,11 @@
 # Activate with SPRING_PROFILES_ACTIVE=prod (Render).
-# JWT_SECRET has no default here — the process refuses to start without it.
+# No localhost defaults — missing DB_* or JWT_SECRET must fail the boot.
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
 app:
   jwt:
     secret: ${JWT_SECRET}

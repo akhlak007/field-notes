@@ -2,6 +2,12 @@ package com.fieldnotes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fieldnotes.dto.CustomerDtos.CustomerWrite;
+import com.fieldnotes.entity.Customer;
+import com.fieldnotes.repository.AppUserRepository;
+import com.fieldnotes.repository.CustomerRepository;
+import com.fieldnotes.service.CustomerService;
+import com.fieldnotes.service.SyncService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,8 +19,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,8 +34,15 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -49,6 +65,24 @@ class FieldNotesApiTest {
 
 	@Autowired
 	ObjectMapper objectMapper;
+
+	@Autowired
+	JdbcTemplate jdbc;
+
+	@Autowired
+	PlatformTransactionManager transactions;
+
+	@Autowired
+	AppUserRepository users;
+
+	@Autowired
+	CustomerRepository customers;
+
+	@Autowired
+	CustomerService customerService;
+
+	@Autowired
+	SyncService syncService;
 
 	@Test
 	void healthIsPublic() {
@@ -296,6 +330,77 @@ class FieldNotesApiTest {
 
 		String other = registerAndLogin(email());
 		assertThat(get(other, "/api/notes/" + noteId + "/photo").getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	void mutationsAndPullsShareOnePostgresTransactionLock() throws Exception {
+		String email = email();
+		registerAndLogin(email);
+		long userId = users.findByEmail(email).orElseThrow().getId();
+		UUID customerId = UUID.randomUUID();
+		long lockKey = 0x4649454c444e4f54L;
+		ExecutorService pool = Executors.newFixedThreadPool(2);
+		try {
+			CountDownLatch lockHeld = new CountDownLatch(1);
+			CountDownLatch releaseLock = new CountDownLatch(1);
+			Future<?> blocker = pool.submit(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
+				jdbc.queryForObject("select pg_advisory_xact_lock(?)", Object.class, lockKey);
+				lockHeld.countDown();
+				await(releaseLock);
+			}));
+			assertThat(lockHeld.await(5, TimeUnit.SECONDS)).isTrue();
+
+			Future<?> mutation = pool.submit(() -> customerService.upsert(
+					userId,
+					customerId,
+					new CustomerWrite("Locked mutation", null, null)));
+			assertThatThrownBy(() -> mutation.get(200, TimeUnit.MILLISECONDS))
+					.isInstanceOf(TimeoutException.class);
+			releaseLock.countDown();
+			blocker.get(5, TimeUnit.SECONDS);
+			mutation.get(5, TimeUnit.SECONDS);
+
+			Customer baseline = customers.findById(customerId).orElseThrow();
+			baseline.setUpdatedAt(Instant.EPOCH);
+			customers.saveAndFlush(baseline);
+			Instant changedAt = Instant.now().minusSeconds(1);
+			CountDownLatch uncommittedWriteReady = new CountDownLatch(1);
+			CountDownLatch commitWrite = new CountDownLatch(1);
+			Future<?> writer = pool.submit(() -> new TransactionTemplate(transactions).executeWithoutResult(status -> {
+				jdbc.queryForObject("select pg_advisory_xact_lock(?)", Object.class, lockKey);
+				Customer row = customers.findById(customerId).orElseThrow();
+				row.setName("Committed during pull");
+				row.setUpdatedAt(changedAt);
+				customers.saveAndFlush(row);
+				uncommittedWriteReady.countDown();
+				await(commitWrite);
+			}));
+			assertThat(uncommittedWriteReady.await(5, TimeUnit.SECONDS)).isTrue();
+
+			Future<?> pull = pool.submit(() -> syncService.pull(userId, changedAt.minusMillis(1)));
+			assertThatThrownBy(() -> pull.get(200, TimeUnit.MILLISECONDS))
+					.isInstanceOf(TimeoutException.class);
+			commitWrite.countDown();
+			writer.get(5, TimeUnit.SECONDS);
+			var result = (com.fieldnotes.dto.SyncDtos.SyncPullResponse) pull.get(5, TimeUnit.SECONDS);
+			assertThat(result.customers()).extracting(row -> row.id()).contains(customerId);
+			assertThat(result.serverTime()).isAfter(changedAt);
+		}
+		finally {
+			pool.shutdownNow();
+		}
+	}
+
+	private static void await(CountDownLatch latch) {
+		try {
+			if (!latch.await(5, TimeUnit.SECONDS)) {
+				throw new IllegalStateException("Timed out waiting for test coordination");
+			}
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	private JsonNode put(String token, String path, Map<String, ?> body) throws Exception {

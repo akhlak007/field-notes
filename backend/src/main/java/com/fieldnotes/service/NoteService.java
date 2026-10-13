@@ -27,16 +27,19 @@ public class NoteService {
 	private final NoteQueryRepository queries;
 	private final SiteRepository sites;
 	private final PhotoStorage photos;
+	private final SyncTransactionLock syncLock;
 
 	public NoteService(
 			FieldNoteRepository notes,
 			NoteQueryRepository queries,
 			SiteRepository sites,
-			PhotoStorage photos) {
+			PhotoStorage photos,
+			SyncTransactionLock syncLock) {
 		this.notes = notes;
 		this.queries = queries;
 		this.sites = sites;
 		this.photos = photos;
+		this.syncLock = syncLock;
 	}
 
 	@Transactional(readOnly = true)
@@ -52,6 +55,7 @@ public class NoteService {
 
 	@Transactional
 	public NoteResponse upsert(long userId, UUID id, NoteWrite write) {
+		syncLock.acquire();
 		requireSite(userId, write.siteId());
 		validateLocation(write.latitude(), write.longitude());
 		Instant now = Instant.now();
@@ -80,6 +84,7 @@ public class NoteService {
 
 	@Transactional
 	public void delete(long userId, UUID id) {
+		syncLock.acquire();
 		FieldNote note = notes.findById(id)
 				.filter(found -> found.getUserId().equals(userId) && found.getDeletedAt() == null)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));
@@ -91,6 +96,7 @@ public class NoteService {
 
 	@Transactional
 	public NoteResponse storePhoto(long userId, UUID id, MultipartFile file) {
+		syncLock.acquire();
 		FieldNote note = notes.findById(id)
 				.filter(found -> found.getUserId().equals(userId) && found.getDeletedAt() == null)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found"));

@@ -315,63 +315,123 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  Future<void> markCustomerSynced(int userId, String id, DateTime updatedAt) {
-    return (update(
-      customers,
-    )..where((c) => c.userId.equals(userId) & c.id.equals(id))).write(
-      CustomersCompanion(
-        syncState: const Value(SyncStates.synced),
-        updatedAt: Value(updatedAt),
-        deletedAt: const Value(null),
-      ),
-    );
+  Future<int> markCustomerSynced(
+    int userId,
+    CustomerRow expected,
+    DateTime updatedAt,
+  ) {
+    return (update(customers)..where(
+          (c) =>
+              c.userId.equals(userId) &
+              c.id.equals(expected.id) &
+              c.name.equals(expected.name) &
+              c.contactInfo.equalsNullable(expected.contactInfo) &
+              c.createdAt.equals(expected.createdAt) &
+              c.updatedAt.equals(expected.updatedAt) &
+              c.deletedAt.equalsNullable(expected.deletedAt) &
+              c.syncState.equals(expected.syncState),
+        ))
+        .write(
+          CustomersCompanion(
+            syncState: const Value(SyncStates.synced),
+            updatedAt: Value(updatedAt),
+            deletedAt: const Value(null),
+          ),
+        );
   }
 
-  Future<void> markSiteSynced(int userId, String id, DateTime updatedAt) {
-    return (update(
-      sites,
-    )..where((s) => s.userId.equals(userId) & s.id.equals(id))).write(
-      SitesCompanion(
-        syncState: const Value(SyncStates.synced),
-        updatedAt: Value(updatedAt),
-        deletedAt: const Value(null),
-      ),
-    );
+  Future<int> markSiteSynced(int userId, SiteRow expected, DateTime updatedAt) {
+    return (update(sites)..where(
+          (s) =>
+              s.userId.equals(userId) &
+              s.id.equals(expected.id) &
+              s.customerId.equals(expected.customerId) &
+              s.siteName.equals(expected.siteName) &
+              s.address.equalsNullable(expected.address) &
+              s.createdAt.equals(expected.createdAt) &
+              s.updatedAt.equals(expected.updatedAt) &
+              s.deletedAt.equalsNullable(expected.deletedAt) &
+              s.syncState.equals(expected.syncState),
+        ))
+        .write(
+          SitesCompanion(
+            syncState: const Value(SyncStates.synced),
+            updatedAt: Value(updatedAt),
+            deletedAt: const Value(null),
+          ),
+        );
   }
 
-  Future<void> markNoteSynced(int userId, String id, DateTime updatedAt) {
-    return (update(
-      fieldNotes,
-    )..where((n) => n.userId.equals(userId) & n.id.equals(id))).write(
-      FieldNotesCompanion(
-        syncState: const Value(SyncStates.synced),
-        updatedAt: Value(updatedAt),
-        deletedAt: const Value(null),
-      ),
-    );
+  Future<int> markNoteSynced(
+    int userId,
+    FieldNoteRow expected,
+    DateTime updatedAt,
+  ) {
+    return (update(fieldNotes)..where(
+          (n) =>
+              n.userId.equals(userId) &
+              n.id.equals(expected.id) &
+              n.siteId.equals(expected.siteId) &
+              n.title.equals(expected.title) &
+              n.description.equalsNullable(expected.description) &
+              n.latitude.equalsNullable(expected.latitude) &
+              n.longitude.equalsNullable(expected.longitude) &
+              n.notedAt.equals(expected.notedAt) &
+              n.status.equals(expected.status) &
+              n.createdAt.equals(expected.createdAt) &
+              n.updatedAt.equals(expected.updatedAt) &
+              n.deletedAt.equalsNullable(expected.deletedAt) &
+              n.syncState.equals(expected.syncState),
+        ))
+        .write(
+          FieldNotesCompanion(
+            syncState: const Value(SyncStates.synced),
+            updatedAt: Value(updatedAt),
+            deletedAt: const Value(null),
+          ),
+        );
   }
 
-  Future<void> markPhotoSynced(int userId, String id) {
-    return (update(
-      fieldNotes,
-    )..where((n) => n.userId.equals(userId) & n.id.equals(id))).write(
-      const FieldNotesCompanion(
-        photoSyncState: Value(PhotoSync.synced),
-        remoteHasPhoto: Value(true),
-      ),
-    );
+  Future<int> markPhotoSynced(
+    int userId,
+    String id,
+    String expectedLocalPhotoPath,
+  ) {
+    return (update(fieldNotes)..where(
+          (n) =>
+              n.userId.equals(userId) &
+              n.id.equals(id) &
+              n.localPhotoPath.equals(expectedLocalPhotoPath) &
+              n.photoSyncState.equals(PhotoSync.pendingUpload),
+        ))
+        .write(
+          const FieldNotesCompanion(
+            photoSyncState: Value(PhotoSync.synced),
+            remoteHasPhoto: Value(true),
+          ),
+        );
   }
 
-  Future<void> setLocalPhoto(int userId, String id, String path) {
-    return (update(
-      fieldNotes,
-    )..where((n) => n.userId.equals(userId) & n.id.equals(id))).write(
-      FieldNotesCompanion(
-        localPhotoPath: Value(path),
-        remoteHasPhoto: const Value(true),
-        photoSyncState: const Value(PhotoSync.synced),
-      ),
-    );
+  Future<int> setLocalPhotoIfUnchanged(
+    int userId,
+    FieldNoteRow expected,
+    String path,
+  ) {
+    return (update(fieldNotes)..where(
+          (n) =>
+              n.userId.equals(userId) &
+              n.id.equals(expected.id) &
+              n.localPhotoPath.equalsNullable(expected.localPhotoPath) &
+              n.photoSyncState.equals(expected.photoSyncState) &
+              n.remoteHasPhoto.equals(expected.remoteHasPhoto),
+        ))
+        .write(
+          FieldNotesCompanion(
+            localPhotoPath: Value(path),
+            remoteHasPhoto: const Value(true),
+            photoSyncState: const Value(PhotoSync.synced),
+          ),
+        );
   }
 
   Future<void> removeCustomer(int userId, String id) => (delete(
@@ -385,6 +445,54 @@ class AppDatabase extends _$AppDatabase {
   Future<void> removeNote(int userId, String id) => (delete(
     fieldNotes,
   )..where((n) => n.userId.equals(userId) & n.id.equals(id))).go();
+
+  Future<int> removeCustomerIfUnchanged(int userId, CustomerRow expected) =>
+      (delete(customers)..where(
+            (c) =>
+                c.userId.equals(userId) &
+                c.id.equals(expected.id) &
+                c.name.equals(expected.name) &
+                c.contactInfo.equalsNullable(expected.contactInfo) &
+                c.createdAt.equals(expected.createdAt) &
+                c.updatedAt.equals(expected.updatedAt) &
+                c.deletedAt.equalsNullable(expected.deletedAt) &
+                c.syncState.equals(expected.syncState),
+          ))
+          .go();
+
+  Future<int> removeSiteIfUnchanged(int userId, SiteRow expected) =>
+      (delete(sites)..where(
+            (s) =>
+                s.userId.equals(userId) &
+                s.id.equals(expected.id) &
+                s.customerId.equals(expected.customerId) &
+                s.siteName.equals(expected.siteName) &
+                s.address.equalsNullable(expected.address) &
+                s.createdAt.equals(expected.createdAt) &
+                s.updatedAt.equals(expected.updatedAt) &
+                s.deletedAt.equalsNullable(expected.deletedAt) &
+                s.syncState.equals(expected.syncState),
+          ))
+          .go();
+
+  Future<int> removeNoteIfUnchanged(int userId, FieldNoteRow expected) =>
+      (delete(fieldNotes)..where(
+            (n) =>
+                n.userId.equals(userId) &
+                n.id.equals(expected.id) &
+                n.siteId.equals(expected.siteId) &
+                n.title.equals(expected.title) &
+                n.description.equalsNullable(expected.description) &
+                n.latitude.equalsNullable(expected.latitude) &
+                n.longitude.equalsNullable(expected.longitude) &
+                n.notedAt.equals(expected.notedAt) &
+                n.status.equals(expected.status) &
+                n.createdAt.equals(expected.createdAt) &
+                n.updatedAt.equals(expected.updatedAt) &
+                n.deletedAt.equalsNullable(expected.deletedAt) &
+                n.syncState.equals(expected.syncState),
+          ))
+          .go();
 
   Future<CustomerRow?> anyCustomer(int userId, String id) {
     return (select(customers)

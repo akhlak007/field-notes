@@ -22,11 +22,17 @@ public class CustomerService {
 	private final CustomerRepository customers;
 	private final SiteRepository sites;
 	private final FieldNoteRepository notes;
+	private final SyncTransactionLock syncLock;
 
-	public CustomerService(CustomerRepository customers, SiteRepository sites, FieldNoteRepository notes) {
+	public CustomerService(
+			CustomerRepository customers,
+			SiteRepository sites,
+			FieldNoteRepository notes,
+			SyncTransactionLock syncLock) {
 		this.customers = customers;
 		this.sites = sites;
 		this.notes = notes;
+		this.syncLock = syncLock;
 	}
 
 	@Transactional(readOnly = true)
@@ -41,6 +47,7 @@ public class CustomerService {
 
 	@Transactional
 	public CustomerResponse upsert(long userId, UUID id, CustomerWrite write) {
+		syncLock.acquire();
 		Instant now = Instant.now();
 		Customer existing = customers.findById(id).orElse(null);
 		if (existing != null && !existing.getUserId().equals(userId)) {
@@ -61,6 +68,7 @@ public class CustomerService {
 
 	@Transactional
 	public void delete(long userId, UUID id) {
+		syncLock.acquire();
 		Customer customer = active(userId, id);
 		Instant now = Instant.now();
 		notes.softDeleteByCustomer(userId, id, now);
