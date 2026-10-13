@@ -9,6 +9,7 @@
 <p align="center">
   <a href="docs/demo/field-notes-demo.mp4">Demo video</a> ·
   <a href="https://youtu.be/3YPGbu-IQuc">YouTube</a> ·
+  <a href="https://github.com/akhlak007/field-notes/releases/tag/v1.0">APK Release</a> ·
   <a href="https://field-notes-3.onrender.com/api/health">Live API</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/API.md">API reference</a>
@@ -22,7 +23,7 @@ An offline-first mobile app for recording field observations during site visits.
 ## Evaluating this project in 3 minutes
 
 1. Open the [live API health endpoint](https://field-notes-3.onrender.com/api/health) to wake the backend.
-2. Install the release APK and register a new account.
+2. Install [`FieldNotes-v1.0.apk`](https://github.com/akhlak007/field-notes/releases/download/v1.0/FieldNotes-v1.0.apk) from the [GitHub Release](https://github.com/akhlak007/field-notes/releases/tag/v1.0) and register a new account.
 3. Create a customer → site → note.
 4. Enable airplane mode and edit the note; the change is saved locally.
 5. Reconnect and watch the pending count return to zero and **Last synced** update.
@@ -30,9 +31,9 @@ An offline-first mobile app for recording field observations during site visits.
 
 ### Install the Android APK
 
-**Release:** _Pending publication — this placeholder will be replaced with the GitHub Release link after Task 5._
+**Release:** [Field Notes v1.0](https://github.com/akhlak007/field-notes/releases/tag/v1.0) — `FieldNotes-v1.0.apk` (65.0 MB / 68,160,943 bytes). SHA-256: `37BA934255C8E1BD160E30C5BB9D71A936048EE814DB4405F8587F64581B4573`.
 
-1. Download `FieldNotes-v1.0.apk` from the Release.
+1. Download [`FieldNotes-v1.0.apk`](https://github.com/akhlak007/field-notes/releases/download/v1.0/FieldNotes-v1.0.apk) from the Release.
 2. If Android asks, allow installs from unknown sources for your browser or file manager.
 3. Install and open Field Notes.
 4. Select **Register** to create an evaluator account.
@@ -112,7 +113,7 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 |---|---|
 | **Live backend URL** | `https://field-notes-3.onrender.com` |
 | **Health** | `GET https://field-notes-3.onrender.com/api/health` → `{"status":"UP"}` |
-| **APK** | **Release link pending Task 5.** Build from the repo root with `.\scripts\build-release-apk.ps1`; the release APK targets the public HTTPS API. |
+| **APK** | [`FieldNotes-v1.0.apk`](https://github.com/akhlak007/field-notes/releases/download/v1.0/FieldNotes-v1.0.apk) (65.0 MB). SHA-256: `37BA934255C8E1BD160E30C5BB9D71A936048EE814DB4405F8587F64581B4573`. |
 | **Video demo** | [Play MP4](docs/demo/field-notes-demo.mp4) · [Watch on YouTube](https://youtu.be/3YPGbu-IQuc) |
 | **Demo access** | Create an account from the Register tab; no shared credentials are required |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
@@ -216,10 +217,12 @@ Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`.
 
 | Command | Result |
 |---|---|
-| `flutter analyze` (in `mobile/`) | No issues found (13 October 2026) |
-| `flutter test` | All 38 tests passed (13 October 2026) |
-| `mvn test` (`backend/mvnw.cmd test`) | Not re-run in this final verification pass |
-| `.\scripts\build-release-apk.ps1` | Not run yet in this final release pass |
+| `flutter pub get` (in `mobile/`) | Exit 0 — Got dependencies (13 October 2026) |
+| `flutter analyze` (in `mobile/`) | Exit 0 — No issues found (13 October 2026) |
+| `flutter test` (in `mobile/`) | Exit 0 — All 38 tests passed (13 October 2026) |
+| `.\mvnw.cmd test` (in `backend/`) | Exit 0 — BUILD SUCCESS, Tests run: 8, Failures: 0 (Testcontainers PostgreSQL 16) |
+| `GET https://field-notes-3.onrender.com/api/health` | `{"status":"UP"}` |
+| Public APK download + SHA-256 | 68,160,943 bytes; `37BA934255C8E1BD160E30C5BB9D71A936048EE814DB4405F8587F64581B4573` |
 
 ## Known limitations
 
