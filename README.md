@@ -16,6 +16,27 @@
 
 An offline-first mobile app for recording field observations during site visits. Customers, sites, and notes are written to local SQLite immediately and synchronized with a Spring Boot API whenever connectivity is available.
 
+> [!IMPORTANT]
+> The free Render service can take **30–60 seconds** to wake after being idle. Open the [health endpoint](https://field-notes-3.onrender.com/api/health) first and wait for `{"status":"UP"}` before evaluating the app.
+
+## Evaluating this project in 3 minutes
+
+1. Open the [live API health endpoint](https://field-notes-3.onrender.com/api/health) to wake the backend.
+2. Install the release APK and register a new account.
+3. Create a customer → site → note.
+4. Enable airplane mode and edit the note; the change is saved locally.
+5. Reconnect and watch the pending count return to zero and **Last synced** update.
+6. Open **Settings → Default note status**, change it, restart the app, and confirm it persists.
+
+### Install the Android APK
+
+**Release:** _Pending publication — this placeholder will be replaced with the GitHub Release link after Task 5._
+
+1. Download `FieldNotes-v1.0.apk` from the Release.
+2. If Android asks, allow installs from unknown sources for your browser or file manager.
+3. Install and open Field Notes.
+4. Select **Register** to create an evaluator account.
+
 ## Features
 
 - Register / sign in with JWT; data is isolated per account (foreign IDs return 404)
@@ -91,7 +112,7 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 |---|---|
 | **Live backend URL** | `https://field-notes-3.onrender.com` |
 | **Health** | `GET https://field-notes-3.onrender.com/api/health` → `{"status":"UP"}` |
-| **APK** | From the repo root: `.\scripts\build-release-apk.ps1` — the release APK already talks to the public URL. Attach `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk` to a GitHub Release |
+| **APK** | **Release link pending Task 5.** Build from the repo root with `.\scripts\build-release-apk.ps1`; the release APK targets the public HTTPS API. |
 | **Video demo** | [Play MP4](docs/demo/field-notes-demo.mp4) · [Watch on YouTube](https://youtu.be/3YPGbu-IQuc) |
 | **Demo access** | Create an account from the Register tab; no shared credentials are required |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
@@ -110,6 +131,8 @@ Render env vars (never commit the real values):
 | `PHOTO_DIR` | `/app/uploads` |
 
 Photos are files under `PHOTO_DIR`. On free Render disks they **disappear when the instance restarts**. Notes and other data stay in Neon. CORS is off; a mobile app does not need it.
+
+Flyway applies the database schema automatically on the first successful backend boot against Neon.
 
 Release APKs use HTTPS only (`usesCleartextTraffic` is not set on the main manifest). A local release keystore can be configured with `mobile/android/key.properties`; this file and all keystores are ignored by Git.
 
@@ -193,14 +216,13 @@ Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`.
 
 | Command | Result |
 |---|---|
-| `flutter analyze` (in `mobile/`) | No issues found |
-| `flutter test` | All 29 tests passed |
-| `mvn test` (`backend/mvnw.cmd test`) | 8 tests, 0 failures (Testcontainers + PostgreSQL 16), including concurrent sync locking |
-| `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (65.0MB) pointed at `https://field-notes-3.onrender.com` |
+| `flutter analyze` (in `mobile/`) | No issues found (13 October 2026) |
+| `flutter test` | All 38 tests passed (13 October 2026) |
+| `mvn test` (`backend/mvnw.cmd test`) | Not re-run in this final verification pass |
+| `.\scripts\build-release-apk.ps1` | Not run yet in this final release pass |
 
 ## Known limitations
 
-- The public API is `https://field-notes-3.onrender.com`; Flyway creates tables on the first successful boot against Neon.
 - Release HTTP is not open to arbitrary LAN IPs; prefer HTTPS or a debug build for Wi-Fi demos.
 - Default note status is device-wide SharedPreferences (by design: “saved on this device only”), not synced.
 - Photos are stored on the API filesystem (`PHOTO_DIR`). On free Render they can vanish on restart; metadata stays in Postgres.
