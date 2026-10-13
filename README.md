@@ -1,5 +1,18 @@
 # Field Notes
 
+<p align="center">
+  <img src="docs/screenshots/field-notes-brand.png" alt="Field Notes brand and app icon" width="760" />
+</p>
+
+<p align="center"><strong>Capture every site. Even offline.</strong></p>
+
+<p align="center">
+  <a href="https://youtu.be/3YPGbu-IQuc">Video demo</a> ·
+  <a href="https://field-notes-3.onrender.com/api/health">Live API</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="docs/API.md">API reference</a>
+</p>
+
 An offline-first mobile app for recording field observations during site visits. Customers, sites, and notes are written to local SQLite immediately and synchronized with a Spring Boot API whenever connectivity is available.
 
 ## Features
@@ -11,6 +24,37 @@ An offline-first mobile app for recording field observations during site visits.
 - Photo (camera or gallery) and current location, with a non-crashing denied path
 - Default note status in Settings — saved on this device only, never synced
 - Restore after clear-data / reinstall by signing in again (pull from epoch)
+
+## Demo
+
+**[Watch the Field Notes app demo on YouTube](https://youtu.be/3YPGbu-IQuc)**
+
+The written [demo walkthrough](docs/DEMO.md) covers registration, relational CRUD, search and filtering, offline changes, automatic synchronization, and server restore.
+
+## Screenshots
+
+<table>
+  <tr>
+    <th>Sign in</th>
+    <th>Notes</th>
+    <th>New note</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/sign-in.png" alt="Field Notes sign-in screen" width="240" /></td>
+    <td><img src="docs/screenshots/notes-list.png" alt="Searchable and filterable notes list" width="240" /></td>
+    <td><img src="docs/screenshots/new-note.png" alt="New field note form" width="240" /></td>
+  </tr>
+  <tr>
+    <th>Note detail</th>
+    <th>Customers</th>
+    <th>Settings</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/note-detail.png" alt="Field note detail screen" width="240" /></td>
+    <td><img src="docs/screenshots/customers.png" alt="Customer list with site counts" width="240" /></td>
+    <td><img src="docs/screenshots/settings.png" alt="Settings and default note status" width="240" /></td>
+  </tr>
+</table>
 
 ## Architecture
 
@@ -38,6 +82,7 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 | **Live backend URL** | `https://field-notes-3.onrender.com` |
 | **Health** | `GET https://field-notes-3.onrender.com/api/health` → `{"status":"UP"}` |
 | **APK** | From the repo root: `.\scripts\build-release-apk.ps1` — the release APK already talks to the public URL. Attach `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk` to a GitHub Release |
+| **Video demo** | [Watch on YouTube](https://youtu.be/3YPGbu-IQuc) |
 | **Demo access** | Create an account from the Register tab; no shared credentials are required |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
 
@@ -142,13 +187,10 @@ Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`.
 | `flutter test` | All 29 tests passed |
 | `mvn test` (`backend/mvnw.cmd test`) | 8 tests, 0 failures (Testcontainers + PostgreSQL 16), including concurrent sync locking |
 | `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (65.0MB) pointed at `https://field-notes-3.onrender.com` |
+
 ## Known limitations
 
 - The public API is `https://field-notes-3.onrender.com`; Flyway creates tables on the first successful boot against Neon.
 - Release HTTP is not open to arbitrary LAN IPs; prefer HTTPS or a debug build for Wi-Fi demos.
 - Default note status is device-wide SharedPreferences (by design: “saved on this device only”), not synced.
 - Photos are stored on the API filesystem (`PHOTO_DIR`). On free Render they can vanish on restart; metadata stays in Postgres.
-
-## Demo walkthrough
-
-Use the short [demo guide](docs/DEMO.md) to verify the main online, offline, synchronization, and restore flows.
