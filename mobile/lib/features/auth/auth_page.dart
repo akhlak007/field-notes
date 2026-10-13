@@ -158,134 +158,149 @@ class _AuthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 21),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _ModeToggle(register: register, onChanged: onModeChanged),
-          const SizedBox(height: 17),
-          const _AuthFieldLabel('Email'),
-          Semantics(
-            label: 'Email',
-            child: TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              textInputAction: TextInputAction.next,
-              autocorrect: false,
-              decoration: _inputDecoration('worker@company.com'),
+    return Theme(
+      data: AppTheme.light(),
+      child: Builder(
+        builder: (context) {
+          final scheme = Theme.of(context).colorScheme;
+          return Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 21),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
             ),
-          ),
-          const SizedBox(height: 13),
-          const _AuthFieldLabel('Password'),
-          Semantics(
-            label: 'Password',
-            child: TextField(
-              controller: password,
-              obscureText: !showPassword,
-              autofillHints: [
-                register ? AutofillHints.newPassword : AutofillHints.password,
-              ],
-              enableSuggestions: false,
-              autocorrect: false,
-              textInputAction: register
-                  ? TextInputAction.next
-                  : TextInputAction.done,
-              onSubmitted: state.submitting || register
-                  ? null
-                  : (_) => onSubmit(),
-              decoration: _inputDecoration(
-                'Password',
-                suffixIcon: IconButton(
-                  tooltip: showPassword ? 'Hide password' : 'Show password',
-                  onPressed: onTogglePassword,
-                  icon: Icon(
-                    showPassword
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ModeToggle(register: register, onChanged: onModeChanged),
+                const SizedBox(height: 17),
+                const _AuthFieldLabel('Email'),
+                Semantics(
+                  label: 'Email',
+                  child: TextField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    decoration: _inputDecoration('worker@company.com'),
                   ),
                 ),
-              ),
-            ),
-          ),
-          if (register) ...[
-            const SizedBox(height: 13),
-            const _AuthFieldLabel('Confirm password'),
-            Semantics(
-              label: 'Confirm password',
-              child: TextField(
-                controller: confirm,
-                obscureText: !showConfirm,
-                autofillHints: const [AutofillHints.newPassword],
-                enableSuggestions: false,
-                autocorrect: false,
-                textInputAction: TextInputAction.done,
-                onSubmitted: state.submitting ? null : (_) => onSubmit(),
-                decoration: _inputDecoration(
-                  'Confirm password',
-                  suffixIcon: IconButton(
-                    tooltip: showConfirm ? 'Hide password' : 'Show password',
-                    onPressed: onToggleConfirm,
-                    icon: Icon(
-                      showConfirm
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 20,
+                const SizedBox(height: 13),
+                const _AuthFieldLabel('Password'),
+                Semantics(
+                  label: 'Password',
+                  child: TextField(
+                    controller: password,
+                    obscureText: !showPassword,
+                    autofillHints: [
+                      register
+                          ? AutofillHints.newPassword
+                          : AutofillHints.password,
+                    ],
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    textInputAction: register
+                        ? TextInputAction.next
+                        : TextInputAction.done,
+                    onSubmitted: state.submitting || register
+                        ? null
+                        : (_) => onSubmit(),
+                    decoration: _inputDecoration(
+                      'Password',
+                      suffixIcon: IconButton(
+                        tooltip: showPassword
+                            ? 'Hide password'
+                            : 'Show password',
+                        onPressed: onTogglePassword,
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-          if (state.error != null) ...[
-            const SizedBox(height: 12),
-            Semantics(
-              liveRegion: true,
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: scheme.errorContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  state.error!,
-                  style: TextStyle(color: scheme.onErrorContainer),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 48,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.55),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                ),
-              ),
-              onPressed: state.submitting ? null : onSubmit,
-              child: state.submitting
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                if (register) ...[
+                  const SizedBox(height: 13),
+                  const _AuthFieldLabel('Confirm password'),
+                  Semantics(
+                    label: 'Confirm password',
+                    child: TextField(
+                      controller: confirm,
+                      obscureText: !showConfirm,
+                      autofillHints: const [AutofillHints.newPassword],
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: state.submitting ? null : (_) => onSubmit(),
+                      decoration: _inputDecoration(
+                        'Confirm password',
+                        suffixIcon: IconButton(
+                          tooltip: showConfirm
+                              ? 'Hide password'
+                              : 'Show password',
+                          onPressed: onToggleConfirm,
+                          icon: Icon(
+                            showConfirm
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 20,
+                          ),
+                        ),
                       ),
-                    )
-                  : Text(register ? 'Create account' : 'Sign in'),
+                    ),
+                  ),
+                ],
+                if (state.error != null) ...[
+                  const SizedBox(height: 12),
+                  Semantics(
+                    liveRegion: true,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: scheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        state.error!,
+                        style: TextStyle(color: scheme.onErrorContainer),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 48,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      disabledBackgroundColor: AppColors.primary.withValues(
+                        alpha: 0.55,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    onPressed: state.submitting ? null : onSubmit,
+                    child: state.submitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(register ? 'Create account' : 'Sign in'),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -360,7 +375,9 @@ class _ModeButton extends StatelessWidget {
         child: Material(
           color: selected ? AppColors.primary : Colors.white,
           shape: StadiumBorder(
-            side: BorderSide(color: selected ? AppColors.primary : AppColors.line),
+            side: BorderSide(
+              color: selected ? AppColors.primary : AppColors.line,
+            ),
           ),
           child: InkWell(
             onTap: onTap,

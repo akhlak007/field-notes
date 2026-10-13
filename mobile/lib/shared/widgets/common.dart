@@ -164,16 +164,13 @@ class AppHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+                Text(title, style: Theme.of(context).textTheme.headlineSmall),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.muted,
+                      color: appMuted(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -189,11 +186,7 @@ class AppHeader extends StatelessWidget {
 }
 
 class HomeTabBar extends StatelessWidget {
-  const HomeTabBar({
-    super.key,
-    required this.index,
-    required this.onChanged,
-  });
+  const HomeTabBar({super.key, required this.index, required this.onChanged});
 
   final int index;
   final ValueChanged<int> onChanged;
@@ -239,9 +232,7 @@ class HomeTabBar extends StatelessWidget {
             style: TextStyle(
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
               fontSize: 15,
-              color: selected
-                  ? AppColors.primary
-                  : AppColors.muted.withValues(alpha: 0.9),
+              color: selected ? appAccent(context) : appMuted(context),
             ),
           ),
         ),
@@ -286,7 +277,7 @@ class EmptyState extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: AppColors.muted,
+                color: appMuted(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -356,7 +347,7 @@ class SectionCard extends StatelessWidget {
             Text(
               label!,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.muted,
+                color: appMuted(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -367,7 +358,7 @@ class SectionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 20, color: AppColors.primary),
+                  Icon(icon, size: 20, color: appAccent(context)),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
@@ -382,9 +373,8 @@ class SectionCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 subtitle!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.muted,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: appMuted(context)),
               ),
             ],
             const SizedBox(height: 16),
@@ -395,9 +385,7 @@ class SectionCard extends StatelessWidget {
     );
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: onTap == null
-          ? content
-          : InkWell(onTap: onTap, child: content),
+      child: onTap == null ? content : InkWell(onTap: onTap, child: content),
     );
   }
 }
@@ -418,10 +406,8 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         statusLabel(status),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -475,7 +461,7 @@ class StatusPills extends StatelessWidget {
           : Theme.of(context).colorScheme.surface,
       shape: StadiumBorder(
         side: BorderSide(
-          color: selected ? AppColors.primary : AppColors.line,
+          color: selected ? AppColors.primary : appOutline(context),
         ),
       ),
       child: InkWell(
@@ -488,7 +474,7 @@ class StatusPills extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
-              color: selected ? Colors.white : AppColors.ink,
+              color: selected ? Colors.white : appInk(context),
             ),
           ),
         ),
@@ -577,7 +563,11 @@ class AppTextField extends StatelessWidget {
 }
 
 class PrimaryButton extends StatelessWidget {
-  const PrimaryButton({super.key, required this.label, required this.onPressed});
+  const PrimaryButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
 
   final String label;
   final VoidCallback? onPressed;
@@ -603,10 +593,8 @@ class FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: AppColors.muted,
-          fontWeight: FontWeight.w600,
-        ),
+        style: Theme.of(context).textTheme.labelLarge
+            ?.copyWith(color: appMuted(context), fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -634,7 +622,7 @@ class TappableField extends StatelessWidget {
           : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.line),
+        side: BorderSide(color: appOutline(context)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -655,7 +643,7 @@ class TappableField extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: muted ? AppColors.muted : AppColors.ink,
+                      color: muted ? appMuted(context) : appInk(context),
                     ),
                   ),
                 ),

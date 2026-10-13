@@ -24,10 +24,7 @@ class CustomersPage extends StatelessWidget {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 8, 20, 8),
-              child: AppHeader(
-                title: 'Customers',
-                trailing: SyncPill(),
-              ),
+              child: AppHeader(title: 'Customers', trailing: SyncPill()),
             ),
             Expanded(
               child: BlocBuilder<CustomerBloc, CustomerState>(
@@ -38,8 +35,7 @@ class CustomersPage extends StatelessWidget {
                   if (state.customers.isEmpty) {
                     return EmptyState(
                       icon: Icons.domain_add_outlined,
-                      message:
-                          'No customers yet. Add the customer for a site visit.',
+                      message: 'No customers yet. Add the customer for a site visit.',
                       actionLabel: 'Add customer',
                       onAction: () => Navigator.of(context).push(
                         MaterialPageRoute(
@@ -89,7 +85,9 @@ class CustomersPage extends StatelessWidget {
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium
-                                            ?.copyWith(color: AppColors.muted),
+                                            ?.copyWith(
+                                              color: appMuted(context),
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -153,8 +151,7 @@ class CustomerDetailPage extends StatelessWidget {
                   final ok = await confirmDelete(
                     context,
                     title: 'Delete customer?',
-                    message:
-                        'This will also delete this customer\'s sites and notes.',
+                    message: 'This will also delete this customer\'s sites and notes.',
                   );
                   if (!ok || !context.mounted) return;
                   context.read<CustomerBloc>().add(

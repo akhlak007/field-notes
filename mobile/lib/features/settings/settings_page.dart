@@ -32,8 +32,7 @@ class SettingsPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   SectionCard(
                     title: 'Default note status',
-                    subtitle:
-                        'Used for new notes. Saved on this device only.',
+                    subtitle: 'Used for new notes. Saved on this device only.',
                     child: BlocBuilder<SettingsBloc, SettingsState>(
                       builder: (context, state) {
                         return StatusPills(
@@ -52,8 +51,7 @@ class SettingsPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   SectionCard(
                     title: 'Sync',
-                    subtitle:
-                        'Changes sync automatically when online. The first request after idle can take up to a minute while the server wakes.',
+                    subtitle: 'Changes sync automatically when online. The first request after idle can take up to a minute while the server wakes.',
                     child: Text(
                       AppConfig.apiBaseUrl(),
                       style: Theme.of(context).textTheme.bodyMedium,
@@ -64,11 +62,11 @@ class SettingsPage extends StatelessWidget {
                     width: double.infinity,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.danger,
+                        foregroundColor: appDanger(context),
                         side: BorderSide(
-                          color: AppColors.danger.withValues(alpha: 0.35),
+                          color: appDanger(context).withValues(alpha: 0.65),
                         ),
-                        backgroundColor: Colors.white,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         minimumSize: const Size(48, 54),
                       ),
                       onPressed: () async {

@@ -28,10 +28,7 @@ class SiteList extends StatelessWidget {
             if (contactInfo != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: SectionCard(
-                  label: 'Contact',
-                  child: Text(contactInfo!),
-                ),
+                child: SectionCard(label: 'Contact', child: Text(contactInfo!)),
               ),
             if (state.loading)
               const Padding(
@@ -68,7 +65,7 @@ class SiteList extends StatelessWidget {
                             Text(
                               site.address ?? 'No address added',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.muted),
+                                  ?.copyWith(color: appMuted(context)),
                             ),
                           ],
                         ),
@@ -161,7 +158,7 @@ class SiteDetailPage extends StatelessWidget {
                       Text(
                         current.address ?? 'No address',
                         style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(color: AppColors.muted),
+                            ?.copyWith(color: appMuted(context)),
                       ),
                     ],
                   ),

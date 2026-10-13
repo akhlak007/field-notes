@@ -108,6 +108,31 @@ void main() {
     pendingLogin.complete(const Session(userId: 1, email: 'user@company.com'));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('dark system theme keeps fixed-white auth fields readable', (
+    tester,
+  ) async {
+    await _pumpAuthPage(tester, theme: AppTheme.dark());
+
+    final field = tester.widget<TextField>(find.byType(TextField).first);
+    final context = tester.element(find.byType(TextField).first);
+    final localTheme = Theme.of(context);
+
+    expect(localTheme.brightness, Brightness.light);
+    expect(localTheme.colorScheme.onSurface, AppColors.ink);
+    expect(field.decoration?.fillColor, Colors.white);
+    expect(
+      _contrast(localTheme.colorScheme.onSurface, Colors.white),
+      greaterThan(7),
+    );
+    expect(
+      _contrast(
+        localTheme.inputDecorationTheme.hintStyle!.color!,
+        Colors.white,
+      ),
+      greaterThan(4.5),
+    );
+  });
 }
 
 Future<void> _pumpAuthPage(
@@ -115,6 +140,7 @@ Future<void> _pumpAuthPage(
   _FakeAuthRepository? repository,
   Size size = const Size(390, 844),
   TextScaler textScaler = TextScaler.noScaling,
+  ThemeData? theme,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -126,7 +152,7 @@ Future<void> _pumpAuthPage(
 
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.light(),
+      theme: theme ?? AppTheme.light(),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: textScaler),
         child: child!,
@@ -134,6 +160,18 @@ Future<void> _pumpAuthPage(
       home: BlocProvider<AuthBloc>.value(value: bloc, child: const AuthPage()),
     ),
   );
+}
+
+double _contrast(Color foreground, Color background) {
+  final foregroundLuminance = foreground.computeLuminance();
+  final backgroundLuminance = background.computeLuminance();
+  final high = foregroundLuminance > backgroundLuminance
+      ? foregroundLuminance
+      : backgroundLuminance;
+  final low = foregroundLuminance > backgroundLuminance
+      ? backgroundLuminance
+      : foregroundLuminance;
+  return (high + 0.05) / (low + 0.05);
 }
 
 class _FakeAuthRepository extends AuthRepository {

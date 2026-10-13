@@ -185,7 +185,7 @@ class NotesList extends StatelessWidget {
                             Text(
                               relativeNoteTime(note.notedAt),
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppColors.muted),
+                                  ?.copyWith(color: appMuted(context)),
                             ),
                           ],
                         ),
@@ -200,7 +200,7 @@ class NotesList extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.muted),
+                              ?.copyWith(color: appMuted(context)),
                         ),
                         if (note.description?.isNotEmpty == true) ...[
                           const SizedBox(height: 4),
@@ -209,7 +209,7 @@ class NotesList extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: AppColors.muted),
+                                ?.copyWith(color: appMuted(context)),
                           ),
                         ],
                       ],
@@ -325,8 +325,7 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
                                   final ok = await confirmDelete(
                                     context,
                                     title: 'Delete note?',
-                                    message:
-                                        'This note will be removed from this device and the server.',
+                                    message: 'This note will be removed from this device and the server.',
                                   );
                                   if (!ok || !context.mounted) return;
                                   context.read<NoteBloc>().add(
@@ -376,7 +375,9 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
                               children: [
                                 Text(
                                   current.siteName,
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -387,7 +388,7 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
                                       current.siteAddress!.trim(),
                                   ].join(' · '),
                                   style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: AppColors.muted),
+                                      ?.copyWith(color: appMuted(context)),
                                 ),
                               ],
                             ),
@@ -412,7 +413,7 @@ class _NoteDetailPageState extends State<NoteDetailPage> {
                                       '${current.latitude}, ${current.longitude}',
                                   ].join(' · '),
                                   style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(color: AppColors.muted),
+                                      ?.copyWith(color: appMuted(context)),
                                 ),
                               ],
                             ),
@@ -581,10 +582,7 @@ class _NoteFormPageState extends State<NoteFormPage> {
                         ),
                         const SizedBox(height: 14),
                         const FieldLabel('Title'),
-                        AppTextField(
-                          controller: _title,
-                          hint: 'Leaking valve',
-                        ),
+                        AppTextField(controller: _title, hint: 'Leaking valve'),
                         const SizedBox(height: 14),
                         const FieldLabel('Description'),
                         AppTextField(

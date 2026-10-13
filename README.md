@@ -137,7 +137,7 @@ Output: `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk`. If `mobile/a
 | Command | Result |
 |---|---|
 | `flutter analyze` (in `mobile/`) | No issues found |
-| `flutter test` | All 24 tests passed |
+| `flutter test` | All 28 tests passed |
 | `mvn test` (`backend/mvnw.cmd test`) | 8 tests, 0 failures (Testcontainers + PostgreSQL 16), including concurrent sync locking |
 | `.\scripts\build-release-apk.ps1` | Built `FieldNotes-v1.0.apk` (65.0MB) pointed at `https://field-notes-3.onrender.com` |
 | Install on a physical phone against a public API | **Not run on a device here**; the public health endpoint was verified `UP` and the APK contains the live hostname |

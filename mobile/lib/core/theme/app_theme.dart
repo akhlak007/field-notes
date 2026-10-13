@@ -26,12 +26,18 @@ class AppTheme {
 
   static ThemeData _theme(Brightness brightness) {
     final dark = brightness == Brightness.dark;
-    final scheme = ColorScheme.fromSeed(
+    final generatedScheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
       primary: dark ? const Color(0xFF7DCDC4) : AppColors.primary,
-      onPrimary: Colors.white,
+      onPrimary: dark ? const Color(0xFF003733) : Colors.white,
       surface: dark ? const Color(0xFF15201E) : AppColors.card,
+    );
+    final scheme = generatedScheme.copyWith(
+      onSurface: dark ? const Color(0xFFE8F1EF) : AppColors.ink,
+      onSurfaceVariant: dark ? const Color(0xFFB7C9C5) : AppColors.muted,
+      outline: dark ? const Color(0xFF82938F) : AppColors.line,
+      outlineVariant: dark ? const Color(0xFF53635F) : AppColors.line,
     );
     final base = ThemeData(
       useMaterial3: true,
@@ -130,10 +136,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          textStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -189,4 +192,39 @@ Color statusBackground(String status) {
     default:
       return AppColors.openBg;
   }
+}
+
+Color appInk(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.brightness == Brightness.dark
+      ? theme.colorScheme.onSurface
+      : AppColors.ink;
+}
+
+Color appMuted(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.brightness == Brightness.dark
+      ? theme.colorScheme.onSurfaceVariant
+      : AppColors.muted;
+}
+
+Color appAccent(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.brightness == Brightness.dark
+      ? theme.colorScheme.primary
+      : AppColors.primary;
+}
+
+Color appOutline(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.brightness == Brightness.dark
+      ? theme.colorScheme.outline
+      : AppColors.line;
+}
+
+Color appDanger(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.brightness == Brightness.dark
+      ? theme.colorScheme.error
+      : AppColors.danger;
 }
