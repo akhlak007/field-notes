@@ -7,7 +7,8 @@
 <p align="center"><strong>Capture every site. Even offline.</strong></p>
 
 <p align="center">
-  <a href="https://youtu.be/3YPGbu-IQuc">Video demo</a> ·
+  <a href="docs/demo/field-notes-demo.mp4">Demo video</a> ·
+  <a href="https://youtu.be/3YPGbu-IQuc">YouTube</a> ·
   <a href="https://field-notes-3.onrender.com/api/health">Live API</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="docs/API.md">API reference</a>
@@ -27,7 +28,16 @@ An offline-first mobile app for recording field observations during site visits.
 
 ## Demo
 
-**[Watch the Field Notes app demo on YouTube](https://youtu.be/3YPGbu-IQuc)**
+<p align="center">
+  <a href="docs/demo/field-notes-demo.mp4">
+    <img src="docs/screenshots/notes-list.png" alt="Play the Field Notes app demo" width="280" />
+  </a>
+</p>
+
+<p align="center">
+  <strong><a href="docs/demo/field-notes-demo.mp4">▶ Play the demo video (MP4, 24 MB)</a></strong><br />
+  <a href="https://youtu.be/3YPGbu-IQuc">Watch on YouTube</a>
+</p>
 
 The written [demo walkthrough](docs/DEMO.md) covers registration, relational CRUD, search and filtering, offline changes, automatic synchronization, and server restore.
 
@@ -82,7 +92,7 @@ Target: **PostgreSQL on Neon** + **Spring Boot on Render** (Docker) + release AP
 | **Live backend URL** | `https://field-notes-3.onrender.com` |
 | **Health** | `GET https://field-notes-3.onrender.com/api/health` → `{"status":"UP"}` |
 | **APK** | From the repo root: `.\scripts\build-release-apk.ps1` — the release APK already talks to the public URL. Attach `mobile/build/app/outputs/flutter-apk/FieldNotes-v1.0.apk` to a GitHub Release |
-| **Video demo** | [Watch on YouTube](https://youtu.be/3YPGbu-IQuc) |
+| **Video demo** | [Play MP4](docs/demo/field-notes-demo.mp4) · [Watch on YouTube](https://youtu.be/3YPGbu-IQuc) |
 | **Demo access** | Create an account from the Register tab; no shared credentials are required |
 | **Wake-up** | Render **free** web services sleep after ~15 minutes idle and can take **30–60 seconds** to wake. The first request is slow; it is not a crash. Check [Render pricing](https://render.com/pricing) for current free-tier terms. |
 
