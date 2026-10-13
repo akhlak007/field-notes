@@ -109,10 +109,8 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('dark system theme keeps fixed-white auth fields readable', (
-    tester,
-  ) async {
-    await _pumpAuthPage(tester, theme: AppTheme.dark());
+  testWidgets('fixed-white auth fields meet contrast guidance', (tester) async {
+    await _pumpAuthPage(tester);
 
     final field = tester.widget<TextField>(find.byType(TextField).first);
     final context = tester.element(find.byType(TextField).first);
@@ -140,7 +138,6 @@ Future<void> _pumpAuthPage(
   _FakeAuthRepository? repository,
   Size size = const Size(390, 844),
   TextScaler textScaler = TextScaler.noScaling,
-  ThemeData? theme,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -152,7 +149,7 @@ Future<void> _pumpAuthPage(
 
   await tester.pumpWidget(
     MaterialApp(
-      theme: theme ?? AppTheme.light(),
+      theme: AppTheme.light(),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: textScaler),
         child: child!,

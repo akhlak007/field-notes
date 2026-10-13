@@ -24,99 +24,87 @@ class AppTheme {
   static const seed = AppColors.primary;
   static const ink = AppColors.ink;
 
-  static ThemeData _theme(Brightness brightness) {
-    final dark = brightness == Brightness.dark;
-    final generatedScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
-      primary: dark ? const Color(0xFF7DCDC4) : AppColors.primary,
-      onPrimary: dark ? const Color(0xFF003733) : Colors.white,
-      surface: dark ? const Color(0xFF15201E) : AppColors.card,
-    );
-    final scheme = generatedScheme.copyWith(
-      onSurface: dark ? const Color(0xFFE8F1EF) : AppColors.ink,
-      onSurfaceVariant: dark ? const Color(0xFFB7C9C5) : AppColors.muted,
-      outline: dark ? const Color(0xFF82938F) : AppColors.line,
-      outlineVariant: dark ? const Color(0xFF53635F) : AppColors.line,
-    );
+  static ThemeData light() {
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.light,
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          surface: AppColors.card,
+        ).copyWith(
+          onSurface: AppColors.ink,
+          onSurfaceVariant: AppColors.muted,
+          outline: AppColors.line,
+          outlineVariant: AppColors.line,
+          error: AppColors.danger,
+        );
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      brightness: brightness,
+      brightness: Brightness.light,
       fontFamily: 'Plus Jakarta Sans',
     );
     final radius = BorderRadius.circular(16);
     return base.copyWith(
-      scaffoldBackgroundColor: dark
-          ? const Color(0xFF101817)
-          : AppColors.canvas,
+      scaffoldBackgroundColor: AppColors.canvas,
       textTheme: base.textTheme.copyWith(
         headlineMedium: base.textTheme.headlineMedium?.copyWith(
           fontWeight: FontWeight.w800,
           letterSpacing: -0.9,
-          color: dark ? scheme.onSurface : AppColors.ink,
+          color: AppColors.ink,
         ),
         headlineSmall: base.textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.w800,
           letterSpacing: -0.6,
-          color: dark ? scheme.onSurface : AppColors.ink,
+          color: AppColors.ink,
         ),
         titleLarge: base.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w800,
           letterSpacing: -0.4,
-          color: dark ? scheme.onSurface : AppColors.ink,
+          color: AppColors.ink,
         ),
         titleMedium: base.textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w700,
-          color: dark ? scheme.onSurface : AppColors.ink,
+          color: AppColors.ink,
         ),
-        bodyMedium: base.textTheme.bodyMedium?.copyWith(
-          color: dark ? scheme.onSurface : AppColors.ink,
-        ),
+        bodyMedium: base.textTheme.bodyMedium?.copyWith(color: AppColors.ink),
       ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: dark ? scheme.onSurface : AppColors.ink,
+        foregroundColor: AppColors.ink,
         titleTextStyle: base.textTheme.headlineSmall?.copyWith(
-          color: dark ? scheme.onSurface : AppColors.ink,
+          color: AppColors.ink,
           fontWeight: FontWeight.w800,
           letterSpacing: -0.6,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: dark ? scheme.surface : AppColors.card,
+        color: AppColors.card,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: radius,
-          side: BorderSide(
-            color: dark
-                ? scheme.outlineVariant.withValues(alpha: 0.4)
-                : AppColors.line.withValues(alpha: 0.65),
-          ),
+          side: BorderSide(color: AppColors.line.withValues(alpha: 0.65)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: dark ? scheme.surface : AppColors.card,
+        fillColor: AppColors.card,
         hintStyle: TextStyle(
-          color: dark ? scheme.onSurfaceVariant : AppColors.muted,
+          color: AppColors.muted,
           fontWeight: FontWeight.w500,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: dark ? scheme.outlineVariant : AppColors.line,
-          ),
+          borderSide: BorderSide(color: AppColors.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
-            color: dark ? scheme.outlineVariant : AppColors.line,
-          ),
+          borderSide: BorderSide(color: AppColors.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -155,21 +143,12 @@ class AppTheme {
       ),
       chipTheme: base.chipTheme.copyWith(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        side: BorderSide(color: dark ? scheme.outlineVariant : AppColors.line),
+        side: const BorderSide(color: AppColors.line),
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
-      dividerTheme: DividerThemeData(
-        color: dark
-            ? scheme.outlineVariant.withValues(alpha: 0.7)
-            : AppColors.line,
-        thickness: 1,
-      ),
+      dividerTheme: DividerThemeData(color: AppColors.line, thickness: 1),
     );
   }
-
-  static ThemeData light() => _theme(Brightness.light);
-
-  static ThemeData dark() => _theme(Brightness.dark);
 }
 
 Color statusColor(String status, ColorScheme scheme) {
@@ -195,36 +174,21 @@ Color statusBackground(String status) {
 }
 
 Color appInk(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.brightness == Brightness.dark
-      ? theme.colorScheme.onSurface
-      : AppColors.ink;
+  return Theme.of(context).colorScheme.onSurface;
 }
 
 Color appMuted(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.brightness == Brightness.dark
-      ? theme.colorScheme.onSurfaceVariant
-      : AppColors.muted;
+  return Theme.of(context).colorScheme.onSurfaceVariant;
 }
 
 Color appAccent(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.brightness == Brightness.dark
-      ? theme.colorScheme.primary
-      : AppColors.primary;
+  return Theme.of(context).colorScheme.primary;
 }
 
 Color appOutline(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.brightness == Brightness.dark
-      ? theme.colorScheme.outline
-      : AppColors.line;
+  return Theme.of(context).colorScheme.outline;
 }
 
 Color appDanger(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.brightness == Brightness.dark
-      ? theme.colorScheme.error
-      : AppColors.danger;
+  return Theme.of(context).colorScheme.error;
 }

@@ -22,7 +22,7 @@ class FieldNotesApp extends StatelessWidget {
       title: 'Field Notes',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.light,
       home: BlocListener<AuthBloc, AuthState>(
         listenWhen: (previous, current) =>
             previous.status != current.status ||

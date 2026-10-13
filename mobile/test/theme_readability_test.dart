@@ -1,11 +1,26 @@
+import 'dart:io';
+
 import 'package:field_notes/core/theme/app_theme.dart';
 import 'package:field_notes/shared/widgets/common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('dark semantic text colors meet normal-text contrast guidance', () {
-    final theme = AppTheme.dark();
+  test('Android native startup theme stays light', () {
+    final nightStyles = File('android/app/src/main/res/values-night/styles.xml')
+        .readAsStringSync();
+    final modernLaunchBackground = File(
+      'android/app/src/main/res/drawable-v21/launch_background.xml',
+    ).readAsStringSync();
+
+    expect(nightStyles, contains('Theme.Light.NoTitleBar'));
+    expect(nightStyles, isNot(contains('Theme.Black.NoTitleBar')));
+    expect(modernLaunchBackground, contains('@android:color/white'));
+    expect(modernLaunchBackground, isNot(contains('?android:colorBackground')));
+  });
+
+  test('light palette meets normal-text contrast guidance', () {
+    final theme = AppTheme.light();
     final background = theme.scaffoldBackgroundColor;
 
     expect(_contrast(theme.colorScheme.onSurface, background), greaterThan(7));
@@ -20,12 +35,20 @@ void main() {
     );
   });
 
-  testWidgets('shared navigation and filters use adaptive dark colors', (
+  testWidgets('system dark preference does not change the approved light UI', (
     tester,
   ) async {
+    tester.binding.platformDispatcher.platformBrightnessTestValue =
+        Brightness.dark;
+    addTearDown(
+      tester.binding.platformDispatcher.clearPlatformBrightnessTestValue,
+    );
+
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.dark(),
+        theme: AppTheme.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.light,
         home: Scaffold(
           body: Column(
             children: [
@@ -40,6 +63,8 @@ void main() {
     );
 
     final context = tester.element(find.byType(StatusPills));
+    expect(Theme.of(context).brightness, Brightness.light);
+    expect(Theme.of(context).scaffoldBackgroundColor, AppColors.canvas);
     expect(
       tester.widget<Text>(find.text('2 notes · 2 open')).style?.color,
       appMuted(context),
@@ -58,9 +83,7 @@ void main() {
     );
   });
 
-  testWidgets('light shared colors retain the reference palette', (
-    tester,
-  ) async {
+  testWidgets('shared colors retain the reference palette', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),

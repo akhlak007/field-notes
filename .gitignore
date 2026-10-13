@@ -45,6 +45,13 @@ mobile/*.aab
 hs_err_pid*.log
 *.hprof
 
+# Local coding/deployment tool metadata (not part of the application)
+/backend/.agents/
+/backend/skills-lock.json
+/neon.ts
+/package.json
+/package-lock.json
+
 # Node / Maven leftovers if tools drop them at the root
 node_modules/
 target/

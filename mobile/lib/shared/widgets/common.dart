@@ -193,21 +193,14 @@ class HomeTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Material(
-      color: dark ? Theme.of(context).colorScheme.surface : Colors.white,
+      color: Colors.white,
       child: SafeArea(
         top: false,
         child: Container(
           height: 58,
           decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: dark
-                    ? Theme.of(context).colorScheme.outlineVariant
-                    : AppColors.line,
-              ),
-            ),
+            border: Border(top: BorderSide(color: AppColors.line)),
           ),
           child: Row(
             children: [
@@ -617,9 +610,7 @@ class TappableField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Theme.of(context).colorScheme.surface
-          : Colors.white,
+      color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(color: appOutline(context)),
