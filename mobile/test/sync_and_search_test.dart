@@ -613,6 +613,131 @@ void main() {
     expect(remote.pushes[1].customers.single['id'], 'customer-2');
   });
 
+  test('sync state exposes the server-confirmed cursor immediately', () async {
+    final changes = LocalChangeBus();
+    addTearDown(changes.close);
+    final bloc = SyncBloc(
+      syncService: SyncService(
+        remote: _FakeRemote(),
+        database: database,
+        userId: () async => 7,
+      ),
+      database: database,
+      changes: changes,
+      checkConnectivity: () async => [ConnectivityResult.wifi],
+      connectivityChanges: const Stream.empty(),
+    );
+    addTearDown(bloc.close);
+
+    final completed = bloc.stream.firstWhere(
+      (state) => !state.syncing && state.lastSyncedAt != null,
+    );
+    bloc.add(const SyncStarted(7));
+
+    expect((await completed).lastSyncedAt, DateTime.utc(2026, 10, 7, 1));
+  });
+
+  test(
+    'starting another account clears account-scoped sync state immediately',
+    () async {
+      await database.setLastSyncAt(1, DateTime.utc(2026, 10, 6, 10));
+      await database.saveCustomer(
+        CustomerRow(
+          id: 'account-2-pending',
+          userId: 2,
+          name: 'Second account',
+          contactInfo: null,
+          createdAt: DateTime.utc(2026, 10, 6),
+          updatedAt: DateTime.utc(2026, 10, 6),
+          syncState: SyncStates.pendingUpsert,
+        ),
+      );
+      final secondCheckStarted = Completer<void>();
+      final releaseSecondCheck = Completer<void>();
+      var connectivityChecks = 0;
+      final changes = LocalChangeBus();
+      addTearDown(changes.close);
+      final bloc = SyncBloc(
+        syncService: SyncService(
+          remote: _FakeRemote(),
+          database: database,
+          userId: () async => 2,
+        ),
+        database: database,
+        changes: changes,
+        checkConnectivity: () async {
+          connectivityChecks += 1;
+          if (connectivityChecks == 2) {
+            secondCheckStarted.complete();
+            await releaseSecondCheck.future;
+          }
+          return [ConnectivityResult.none];
+        },
+        connectivityChanges: const Stream.empty(),
+      );
+      addTearDown(bloc.close);
+
+      final firstAccountLoaded = bloc.stream.firstWhere(
+        (state) => state.lastSyncedAt == DateTime.utc(2026, 10, 6, 10),
+      );
+      bloc.add(const SyncStarted(1));
+      await firstAccountLoaded;
+
+      bloc.add(const SyncStarted(2));
+      await secondCheckStarted.future;
+
+      expect(bloc.state.lastSyncedAt, isNull);
+      expect(bloc.state.pending, 0);
+      expect(bloc.state.syncing, isFalse);
+
+      final secondAccountLoaded = bloc.stream.firstWhere(
+        (state) => !state.online && state.pending == 1,
+      );
+      releaseSecondCheck.complete();
+      await secondAccountLoaded;
+    },
+  );
+
+  test('sync requests wait for account initialization and run once', () async {
+    final checkStarted = Completer<void>();
+    final releaseCheck = Completer<void>();
+    final remote = _FakeRemote();
+    final changes = LocalChangeBus();
+    addTearDown(changes.close);
+    final bloc = SyncBloc(
+      syncService: SyncService(
+        remote: remote,
+        database: database,
+        userId: () async => 7,
+      ),
+      database: database,
+      changes: changes,
+      checkConnectivity: () async {
+        checkStarted.complete();
+        await releaseCheck.future;
+        return [ConnectivityResult.wifi];
+      },
+      connectivityChanges: const Stream.empty(),
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const SyncStarted(7));
+    await checkStarted.future;
+    bloc.add(const SyncRequested());
+    bloc.add(const ConnectivityChanged(true));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(remote.pullSince, isEmpty);
+
+    releaseCheck.complete();
+    await bloc.stream.firstWhere(
+      (state) => !state.syncing && state.lastSyncedAt != null,
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(remote.pullSince, hasLength(1));
+  });
+
   test(
     'a sync request received during a pass triggers a follow-up pass',
     () async {
